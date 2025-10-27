@@ -2,7 +2,8 @@
 import { ResumeData } from '../types';
 
 type ValidationErrors = {
-  [K in keyof ResumeData]?: string | Record<string, unknown>[];
+  // FIX: Allow a single object for field errors (for personalInfo), not just a string or an array of objects.
+  [K in keyof ResumeData]?: string | Record<string, unknown> | Record<string, unknown>[];
 };
 
 export const validateResumeData = (data: ResumeData): ValidationErrors => {

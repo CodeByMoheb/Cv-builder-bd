@@ -1,4 +1,3 @@
-// FIX: Created the content for the missing PersonalInfoForm.tsx file.
 import React, { useState, useRef } from 'react';
 import { ResumeData } from '../../types';
 import { generateContentSuggestion, editProfileImage } from '../../services/geminiService';
@@ -42,10 +41,29 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ resumeData, setResu
 
   const generateSummary = async () => {
     setIsGenerating(true);
-    const prompt = `Based on this resume data, write a compelling, professional summary in 2-3 sentences for a ${personalInfo.title}:
-    - Name: ${personalInfo.name}
-    - Experience: ${resumeData.experience.map(e => e.title).join(', ')}
-    - Key Skills: ${resumeData.skills.slice(0, 5).map(s => s.name).join(', ')}`;
+    
+    // Gather more context from the resume data for a better prompt
+    const recentExperience = resumeData.experience
+      .slice(0, 2) // Get the 2 most recent jobs for brevity
+      .map(job => `${job.title} at ${job.company}`)
+      .join('; ');
+
+    const allSkills = resumeData.skills.map(skill => skill.name).join(', ');
+    const keyProjects = resumeData.projects.slice(0, 2).map(p => p.name).join(', ');
+
+    // Construct a more detailed and effective prompt
+    const prompt = `You are an expert career coach and resume writer. 
+    Craft a powerful and concise professional summary (2-3 sentences) for a "${personalInfo.title}". 
+    Use the following information to make the summary tailored and impactful. Highlight the most relevant skills and experiences for the target title.
+
+    **Candidate Information:**
+    - **Target Title:** ${personalInfo.title}
+    - **Recent Experience:** ${recentExperience || 'Not specified'}
+    - **Core Skills:** ${allSkills || 'Not specified'}
+    - **Key Projects:** ${keyProjects || 'Not specified'}
+
+    Generate the summary now.`;
+
     const suggestion = await generateContentSuggestion(prompt);
     setResumeData(prev => ({
       ...prev,
