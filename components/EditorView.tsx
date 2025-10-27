@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ResumeData, Template } from '../types';
 import ResumeEditor from './ResumeEditor';
 import ResumePreview from './ResumePreview';
 import { ArrowLeftIcon, DownloadIcon } from './ui/Icons';
+import PaymentModal from './PaymentModal';
 
 interface EditorViewProps {
   template: Template;
@@ -14,8 +15,9 @@ interface EditorViewProps {
 }
 
 const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResumeData, onBack }) => {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     
-  const handleDownloadPdf = () => {
+  const executeDownload = () => {
     // Target the fixed-size inner div for a perfect 1:1 render
     const previewElement = document.getElementById('pdf-content');
     if (previewElement) {
@@ -41,36 +43,49 @@ const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResume
     }
   };
 
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    // Add a small delay to allow the modal to close before the download starts
+    setTimeout(executeDownload, 100); 
+  };
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors duration-200"
-        >
-          <ArrowLeftIcon />
-          Back to Templates
-        </button>
-        <button
-            onClick={handleDownloadPdf}
-            className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-        >
-            <DownloadIcon />
-            Download as PDF
-        </button>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-        {/* Left column for the editor form, takes up 3/5 of the space on large screens */}
-        <div className="lg:col-span-3">
-          <ResumeEditor resumeData={resumeData} setResumeData={setResumeData} />
+    <>
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors duration-200"
+          >
+            <ArrowLeftIcon />
+            Back to Templates
+          </button>
+          <button
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+              <DownloadIcon />
+              Download as PDF
+          </button>
         </div>
-        
-        {/* Right column for the live preview, takes up 2/5 of the space */}
-        <div className="lg:col-span-2 lg:sticky lg:top-24">
-          <ResumePreview template={template} resumeData={resumeData} />
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+          {/* Left column for the editor form, takes up 3/5 of the space on large screens */}
+          <div className="lg:col-span-3">
+            <ResumeEditor resumeData={resumeData} setResumeData={setResumeData} />
+          </div>
+          
+          {/* Right column for the live preview, takes up 2/5 of the space */}
+          <div className="lg:col-span-2 lg:sticky lg:top-24">
+            <ResumePreview template={template} resumeData={resumeData} />
+          </div>
         </div>
       </div>
-    </div>
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+    </>
   );
 };
 
