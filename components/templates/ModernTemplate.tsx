@@ -8,7 +8,8 @@ export const ModernTemplate: React.FC<{ resumeData: ResumeData }> = ({ resumeDat
   return (
     <div className="bg-white p-8 font-sans text-sm text-gray-800">
       <div className="flex items-center mb-8">
-        {personalInfo.photo && <img src={`data:image/jpeg;base64,${personalInfo.photo}`} alt="Profile" className="w-24 h-24 rounded-full mr-6 object-cover" />}
+        {/* FIX: Use personalInfo.photo directly as it contains the full data URL */}
+        {personalInfo.photo && <img src={personalInfo.photo} alt="Profile" className="w-24 h-24 rounded-full mr-6 object-cover" />}
         <div>
           <h1 className="text-4xl font-bold text-gray-900">{personalInfo.name}</h1>
           <h2 className="text-xl font-light text-primary">{personalInfo.title}</h2>

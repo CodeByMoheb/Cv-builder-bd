@@ -19,7 +19,8 @@ export const generateContentSuggestion = async (prompt: string): Promise<string>
   if (!API_KEY) return "API Key not configured.";
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite',
+      // FIX: Updated model name to 'gemini-flash-lite-latest' as per SDK guidelines for lite models.
+      model: 'gemini-flash-lite-latest',
       contents: prompt,
     });
     return response.text;

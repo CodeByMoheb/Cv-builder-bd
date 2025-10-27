@@ -9,7 +9,8 @@ export const ExecutiveTemplate: React.FC<{ resumeData: ResumeData }> = ({ resume
     <div className="bg-white flex font-serif text-gray-800 min-h-full">
       <div className="w-1/3 bg-gray-800 text-white p-8">
         {personalInfo.photo && (
-            <img src={`data:image/jpeg;base64,${personalInfo.photo}`} alt="Profile" className="w-32 h-32 rounded-full mx-auto mb-6 object-cover border-4 border-gray-500" />
+            // FIX: Use personalInfo.photo directly as it contains the full data URL
+            <img src={personalInfo.photo} alt="Profile" className="w-32 h-32 rounded-full mx-auto mb-6 object-cover border-4 border-gray-500" />
         )}
         <h3 className="text-xl font-semibold border-b border-gray-500 pb-2 mb-4">Contact</h3>
         <ul className="text-sm space-y-2 mb-6">

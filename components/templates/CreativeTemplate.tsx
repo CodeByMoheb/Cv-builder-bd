@@ -23,7 +23,8 @@ export const CreativeTemplate: React.FC<{ resumeData: ResumeData }> = ({ resumeD
       <div className="flex-grow grid grid-cols-12 gap-8">
         <aside className="col-span-4 pr-6 border-r">
           {personalInfo.photo ? 
-            <img src={`data:image/jpeg;base64,${personalInfo.photo}`} alt="Profile" className="w-32 h-32 rounded-full mb-6 mx-auto object-cover border-2 border-primary p-1" />
+            // FIX: Use personalInfo.photo directly as it contains the full data URL
+            <img src={personalInfo.photo} alt="Profile" className="w-32 h-32 rounded-full mb-6 mx-auto object-cover border-2 border-primary p-1" />
             :
             <UserCircleIcon className="w-32 h-32 text-gray-300 mb-6 mx-auto" />
           }
