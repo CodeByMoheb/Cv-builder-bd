@@ -1,0 +1,5 @@
+{
+  "name": "CVBuilderBD: AI-Powered Resume Builder",
+  "description": "A professional web application that allows users to create ATS-friendly resumes instantly. Featuring multiple templates, real-time preview, PDF download, and Gemini AI-powered content assistance, analysis, and image editing.",
+  "requestFramePermissions": []
+}
