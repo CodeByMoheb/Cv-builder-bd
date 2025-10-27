@@ -74,32 +74,32 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
   {
     name: 'Engineer',
     templates: [
-      { id: 'modern', name: 'Modern', imageUrl: 'https://picsum.photos/seed/modern/400/565', component: ModernTemplate },
-      { id: 'executive', name: 'Executive', imageUrl: 'https://picsum.photos/seed/executive/400/565', component: ExecutiveTemplate },
-      { id: 'minimalist', name: 'Minimalist', imageUrl: 'https://picsum.photos/seed/minimalist/400/565', component: MinimalistTemplate },
-      { id: 'creative', name: 'Creative', imageUrl: 'https://picsum.photos/seed/creative/400/565', component: CreativeTemplate },
-      { id: 'tech-sphere', name: 'Tech Sphere', imageUrl: 'https://picsum.photos/seed/tech2/400/565', component: ModernTemplate },
-      { id: 'code-master', name: 'Code Master', imageUrl: 'https://picsum.photos/seed/tech3/400/565', component: ExecutiveTemplate },
-      { id: 'data-driven', name: 'Data Driven', imageUrl: 'https://picsum.photos/seed/data/400/565', component: MinimalistTemplate },
-      { id: 'innovator', name: 'Innovator', imageUrl: 'https://picsum.photos/seed/innovator/400/565', component: CreativeTemplate },
+      { id: 'modern', name: 'Modern', component: ModernTemplate },
+      { id: 'executive', name: 'Executive', component: ExecutiveTemplate },
+      { id: 'minimalist', name: 'Minimalist', component: MinimalistTemplate },
+      { id: 'creative', name: 'Creative', component: CreativeTemplate },
+      { id: 'tech-sphere', name: 'Tech Sphere', component: ModernTemplate },
+      { id: 'code-master', name: 'Code Master', component: ExecutiveTemplate },
+      { id: 'data-driven', name: 'Data Driven', component: MinimalistTemplate },
+      { id: 'innovator', name: 'Innovator', component: CreativeTemplate },
     ]
   },
   {
     name: 'Corporate/Business',
     templates: [
-      { id: 'corp-blue', name: 'Corporate Blue', imageUrl: 'https://picsum.photos/seed/corp1/400/565', component: ExecutiveTemplate },
-      { id: 'clean-lines', name: 'Clean Lines', imageUrl: 'https://picsum.photos/seed/corp2/400/565', component: MinimalistTemplate },
-      { id: 'professional', name: 'Professional', imageUrl: 'https://picsum.photos/seed/corp3/400/565', component: ModernTemplate },
-      { id: 'business-sharp', name: 'Business Sharp', imageUrl: 'https://picsum.photos/seed/sharp/400/565', component: ExecutiveTemplate },
-      { id: 'consultant', name: 'Consultant', imageUrl: 'https://picsum.photos/seed/consultant/400/565', component: MinimalistTemplate },
+      { id: 'corp-blue', name: 'Corporate Blue', component: ExecutiveTemplate },
+      { id: 'clean-lines', name: 'Clean Lines', component: MinimalistTemplate },
+      { id: 'professional', name: 'Professional', component: ModernTemplate },
+      { id: 'business-sharp', name: 'Business Sharp', component: ExecutiveTemplate },
+      { id: 'consultant', name: 'Consultant', component: MinimalistTemplate },
     ]
   },
    {
     name: 'General',
     templates: [
-      { id: 'classic', name: 'Classic', imageUrl: 'https://picsum.photos/seed/gen1/400/565', component: MinimalistTemplate },
-      { id: 'standard', name: 'Standard', imageUrl: 'https://picsum.photos/seed/gen2/400/565', component: ModernTemplate },
-      { id: 'universal', name: 'Universal', imageUrl: 'https://picsum.photos/seed/universal/400/565', component: CreativeTemplate },
+      { id: 'classic', name: 'Classic', component: MinimalistTemplate },
+      { id: 'standard', name: 'Standard', component: ModernTemplate },
+      { id: 'universal', name: 'Universal', component: CreativeTemplate },
     ]
   }
 ];

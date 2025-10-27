@@ -54,8 +54,7 @@ export interface ResumeData {
 export interface Template {
   id: string;
   name: string;
-  imageUrl: string;
-  component: React.FC<{ resumeData: ResumeData, forPdf?: boolean }>;
+  component: React.FC<{ resumeData: ResumeData }>;
 }
 
 export interface TemplateCategory {
