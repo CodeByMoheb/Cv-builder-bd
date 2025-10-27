@@ -1,107 +1,103 @@
+// FIX: Created the content for the missing SkillsProjectsLanguagesForm.tsx file.
 import React from 'react';
 import { ResumeData } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 import { TrashIcon, PlusIcon } from '../ui/Icons';
 
-interface FormProps {
+interface SkillsProjectsLanguagesFormProps {
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
 }
 
-const SkillsProjectsLanguagesForm: React.FC<FormProps> = ({ resumeData, setResumeData }) => {
+const EditableList: React.FC<{
+    items: { id: string, name: string }[];
+    onAdd: () => void;
+    onRemove: (id: string) => void;
+    onUpdate: (id: string, value: string) => void;
+    title: string;
+    placeholder: string;
+}> = ({ items, onAdd, onRemove, onUpdate, title, placeholder }) => {
+    return (
+        <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+            <div className="space-y-2">
+                {items.map(item => (
+                    <div key={item.id} className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => onUpdate(item.id, e.target.value)}
+                            placeholder={placeholder}
+                            className="input"
+                        />
+                        <button onClick={() => onRemove(item.id)} className="text-gray-400 hover:text-red-500 p-1">
+                           <TrashIcon />
+                        </button>
+                    </div>
+                ))}
+            </div>
+             <button onClick={onAdd} className="mt-2 text-sm text-primary hover:underline flex items-center gap-1">
+                <PlusIcon /> Add {title.slice(0,-1)}
+            </button>
+        </div>
+    );
+};
 
-    const handleSkillChange = (index: number, value: string) => {
-        setResumeData(prev => {
-            const newSkills = [...prev.skills];
-            newSkills[index] = { ...newSkills[index], name: value };
-            return { ...prev, skills: newSkills };
-        });
-    };
-
-    const addSkill = () => {
-        setResumeData(prev => ({ ...prev, skills: [...prev.skills, { id: uuidv4(), name: '' }] }));
-    };
-
-    const removeSkill = (id: string) => {
-        setResumeData(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== id) }));
-    };
-
-    const handleProjectChange = (index: number, field: keyof ResumeData['projects'][number], value: string) => {
-        setResumeData(prev => {
-            const newProjects = [...prev.projects];
-            newProjects[index] = { ...newProjects[index], [field]: value };
-            return { ...prev, projects: newProjects };
-        });
-    };
-
-    const addProject = () => {
-        setResumeData(prev => ({ ...prev, projects: [...prev.projects, { id: uuidv4(), name: '', description: '', url: '' }] }));
-    };
-
-    const removeProject = (id: string) => {
-        setResumeData(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) }));
-    };
+const SkillsProjectsLanguagesForm: React.FC<SkillsProjectsLanguagesFormProps> = ({ resumeData, setResumeData }) => {
     
-    const handleLanguageChange = (index: number, value: string) => {
-        setResumeData(prev => {
-            const newLangs = [...prev.languages];
-            newLangs[index] = { ...newLangs[index], name: value };
-            return { ...prev, languages: newLangs };
-        });
-    };
+    const addSkill = () => setResumeData(p => ({ ...p, skills: [...p.skills, { id: uuidv4(), name: '' }] }));
+    const removeSkill = (id: string) => setResumeData(p => ({ ...p, skills: p.skills.filter(s => s.id !== id) }));
+    const updateSkill = (id: string, name: string) => setResumeData(p => ({ ...p, skills: p.skills.map(s => s.id === id ? { ...s, name } : s) }));
+    
+    const addLanguage = () => setResumeData(p => ({ ...p, languages: [...p.languages, { id: uuidv4(), name: '' }] }));
+    const removeLanguage = (id: string) => setResumeData(p => ({ ...p, languages: p.languages.filter(l => l.id !== id) }));
+    const updateLanguage = (id: string, name: string) => setResumeData(p => ({ ...p, languages: p.languages.map(l => l.id === id ? { ...l, name } : l) }));
 
-    const addLanguage = () => {
-        setResumeData(prev => ({ ...prev, languages: [...prev.languages, { id: uuidv4(), name: '' }] }));
-    };
-
-    const removeLanguage = (id: string) => {
-        setResumeData(prev => ({ ...prev, languages: prev.languages.filter(l => l.id !== id) }));
+    const addProject = () => setResumeData(p => ({...p, projects: [...p.projects, { id: uuidv4(), name: '', description: '', url: ''}]}));
+    const removeProject = (id: string) => setResumeData(p => ({...p, projects: p.projects.filter(proj => proj.id !== id)}));
+    const updateProject = (id: string, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const {name, value} = e.target;
+        setResumeData(p => ({ ...p, projects: p.projects.map(proj => proj.id === id ? {...proj, [name]: value} : proj)}));
     };
 
     return (
-        <div className="space-y-8">
-            {/* Skills Section */}
-            <div>
-                <h3 className="text-lg font-semibold mb-2">Skills</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {resumeData.skills.map((skill, index) => (
-                        <div key={skill.id} className="flex items-center">
-                            <input type="text" placeholder="e.g., React" value={skill.name} onChange={e => handleSkillChange(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-l-md"/>
-                            <button onClick={() => removeSkill(skill.id)} className="p-2.5 border border-l-0 border-red-500 bg-red-500 text-white rounded-r-md"><TrashIcon className="w-4 h-4" /></button>
-                        </div>
-                    ))}
-                </div>
-                <button onClick={addSkill} className="mt-4 text-primary font-semibold flex items-center gap-1"><PlusIcon /> Add Skill</button>
-            </div>
+        <div className="space-y-8 animate-fadeIn">
+            <EditableList
+                items={resumeData.skills}
+                onAdd={addSkill}
+                onRemove={removeSkill}
+                onUpdate={updateSkill}
+                title="Skills"
+                placeholder="e.g., React"
+            />
 
-            {/* Projects Section */}
             <div>
-                 <h3 className="text-lg font-semibold mb-2">Projects</h3>
-                 <div className="space-y-4">
-                    {resumeData.projects.map((proj, index) => (
-                        <div key={proj.id} className="p-4 border rounded-md space-y-4 bg-gray-50/50">
-                            <input type="text" placeholder="Project Name" value={proj.name} onChange={e => handleProjectChange(index, 'name', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-                            <textarea placeholder="Project Description" value={proj.description} onChange={e => handleProjectChange(index, 'description', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md h-20"/>
-                            <button onClick={() => removeProject(proj.id)} className="text-red-500 hover:text-red-700 font-semibold flex items-center justify-center gap-1 text-sm"><TrashIcon /> Remove Project</button>
-                        </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Projects</h3>
+                <div className="space-y-4">
+                    {resumeData.projects.map(proj => (
+                         <div key={proj.id} className="p-4 border rounded-lg space-y-3 bg-gray-50/50 relative">
+                             <button onClick={() => removeProject(proj.id)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500">
+                                <TrashIcon />
+                             </button>
+                             <input type="text" name="name" placeholder="Project Name" value={proj.name} onChange={e => updateProject(proj.id, e)} className="input" />
+                             <textarea name="description" placeholder="Project Description" value={proj.description} onChange={e => updateProject(proj.id, e)} className="input h-20 resize-none" />
+                             <input type="text" name="url" placeholder="Project URL (optional)" value={proj.url} onChange={e => updateProject(proj.id, e)} className="input" />
+                         </div>
                     ))}
                 </div>
-                 <button onClick={addProject} className="mt-4 text-primary font-semibold flex items-center gap-1"><PlusIcon /> Add Project</button>
+                <button onClick={addProject} className="mt-2 text-sm text-primary hover:underline flex items-center gap-1">
+                    <PlusIcon /> Add Project
+                </button>
             </div>
             
-            {/* Languages Section */}
-            <div>
-                <h3 className="text-lg font-semibold mb-2">Languages</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {resumeData.languages.map((lang, index) => (
-                        <div key={lang.id} className="flex items-center">
-                            <input type="text" placeholder="e.g., Spanish (Fluent)" value={lang.name} onChange={e => handleLanguageChange(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-l-md"/>
-                            <button onClick={() => removeLanguage(lang.id)} className="p-2.5 border border-l-0 border-red-500 bg-red-500 text-white rounded-r-md"><TrashIcon className="w-4 h-4" /></button>
-                        </div>
-                    ))}
-                </div>
-                <button onClick={addLanguage} className="mt-4 text-primary font-semibold flex items-center gap-1"><PlusIcon /> Add Language</button>
-            </div>
+            <EditableList
+                items={resumeData.languages}
+                onAdd={addLanguage}
+                onRemove={removeLanguage}
+                onUpdate={updateLanguage}
+                title="Languages"
+                placeholder="e.g., English (Native)"
+            />
         </div>
     );
 };

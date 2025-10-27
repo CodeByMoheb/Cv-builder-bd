@@ -1,145 +1,161 @@
-import React, { useState } from 'react';
+// FIX: Created the content for the missing PersonalInfoForm.tsx file.
+import React, { useState, useRef } from 'react';
 import { ResumeData } from '../../types';
-import { SparklesIcon, UserCircleIcon, PencilIcon } from '../ui/Icons';
 import { generateContentSuggestion, editProfileImage } from '../../services/geminiService';
+import { SparklesIcon, PencilIcon } from '../ui/Icons';
 import { Modal } from '../ui/Modal';
 
-interface FormProps {
+interface PersonalInfoFormProps {
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
 }
 
-// Helper to convert file to base64
-const fileToBase64 = (file: File): Promise<{base64: string, mimeType: string}> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-            const result = reader.result as string;
-            // The result includes the mime type header, e.g., "data:image/jpeg;base64,"
-            // We need to pass the full string to the img src, but only the base64 part to the API
-            const base64Content = result.split(',')[1];
-            const mimeType = result.substring(result.indexOf(':') + 1, result.indexOf(';'));
-            resolve({ base64: base64Content, mimeType });
-        };
-        reader.onerror = error => reject(error);
-    });
-};
+const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ resumeData, setResumeData }) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editPrompt, setEditPrompt] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const personalInfo = resumeData.personalInfo;
 
-const PersonalInfoForm: React.FC<FormProps> = ({ resumeData, setResumeData }) => {
-    const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
-    const [imageEditPrompt, setImageEditPrompt] = useState('');
-    const [isImageEditing, setIsImageEditing] = useState(false);
-    const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
-    const [aiSummary, setAiSummary] = useState('');
-    const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setResumeData(prev => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, [name]: value },
+    }));
+  };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
         setResumeData(prev => ({
-            ...prev,
-            personalInfo: { ...prev.personalInfo, [name]: value },
+          ...prev,
+          personalInfo: { ...prev.personalInfo, photo: event.target?.result as string },
         }));
-    };
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
 
-    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const { base64, mimeType } = await fileToBase64(file);
-            setResumeData(prev => ({
-                ...prev,
-                personalInfo: { ...prev.personalInfo, photo: `data:${mimeType};base64,${base64}` },
-            }));
-        }
-    };
+  const generateSummary = async () => {
+    setIsGenerating(true);
+    const prompt = `Based on this resume data, write a compelling, professional summary in 2-3 sentences for a ${personalInfo.title}:
+    - Name: ${personalInfo.name}
+    - Experience: ${resumeData.experience.map(e => e.title).join(', ')}
+    - Key Skills: ${resumeData.skills.slice(0, 5).map(s => s.name).join(', ')}`;
+    const suggestion = await generateContentSuggestion(prompt);
+    setResumeData(prev => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, summary: suggestion },
+    }));
+    setIsGenerating(false);
+  };
+  
+  const handleImageEdit = async () => {
+    if (!personalInfo.photo || !editPrompt) return;
+    setIsEditingImage(true);
+    
+    const [header, base64Data] = personalInfo.photo.split(',');
+    const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
+    
+    try {
+      const newImageBase64 = await editProfileImage(base64Data, mimeType, editPrompt);
+      const newImageDataUrl = `data:${mimeType};base64,${newImageBase64}`;
+      setResumeData(prev => ({
+        ...prev,
+        personalInfo: { ...prev.personalInfo, photo: newImageDataUrl },
+      }));
+    } catch (error) {
+      console.error("Failed to edit image:", error);
+      alert("Sorry, the image could not be edited at this time.");
+    } finally {
+      setIsEditingImage(false);
+      setIsEditModalOpen(false);
+      setEditPrompt('');
+    }
+  };
 
-    const handleImageEdit = async () => {
-        if (!resumeData.personalInfo.photo || !imageEditPrompt) return;
-        
-        setIsImageEditing(true);
-        try {
-            const fullBase64String = resumeData.personalInfo.photo;
-            const mimeType = fullBase64String.substring(fullBase64String.indexOf(':') + 1, fullBase64String.indexOf(';'));
-            const base64Data = fullBase64String.split(',')[1];
 
-            const editedBase64 = await editProfileImage(base64Data, mimeType, imageEditPrompt);
+  return (
+    <div className="space-y-4 animate-fadeIn">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" name="name" placeholder="Full Name" value={personalInfo.name} onChange={handleChange} className="input" />
+        <input type="text" name="title" placeholder="Job Title (e.g., Senior Software Engineer)" value={personalInfo.title} onChange={handleChange} className="input" />
+      </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="email" name="email" placeholder="Email Address" value={personalInfo.email} onChange={handleChange} className="input" />
+        <input type="tel" name="phone" placeholder="Phone Number" value={personalInfo.phone} onChange={handleChange} className="input" />
+      </div>
+      <input type="text" name="location" placeholder="Location (e.g., San Francisco, CA)" value={personalInfo.location} onChange={handleChange} className="input" />
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" name="linkedin" placeholder="LinkedIn Profile URL" value={personalInfo.linkedin} onChange={handleChange} className="input" />
+        <input type="text" name="website" placeholder="Personal Website/Portfolio" value={personalInfo.website} onChange={handleChange} className="input" />
+      </div>
 
-            setResumeData(prev => ({
-                ...prev,
-                personalInfo: { ...prev.personalInfo, photo: `data:${mimeType};base64,${editedBase64}` },
-            }));
-            setIsImageEditorOpen(false);
-            setImageEditPrompt('');
-        } catch (error) {
-            console.error(error);
-            alert("Failed to edit image.");
-        } finally {
-            setIsImageEditing(false);
-        }
-    };
+      <div className="relative">
+        <textarea name="summary" placeholder="Professional Summary" value={personalInfo.summary} onChange={handleChange} className="input h-28 resize-none" />
+        <button onClick={generateSummary} disabled={isGenerating} className="absolute bottom-2 right-2 bg-primary/20 text-primary hover:bg-primary/30 text-xs font-bold py-1 px-2 rounded-md flex items-center gap-1 disabled:opacity-50">
+          <SparklesIcon className="w-4 h-4" />
+          {isGenerating ? 'Generating...' : 'AI Suggestion'}
+        </button>
+      </div>
 
-    const handleSummaryAssist = async () => {
-        setIsSummaryLoading(true);
-        setIsSummaryModalOpen(true);
-        setAiSummary('Generating...');
-        const prompt = `Based on this resume data, write a compelling professional summary. Current summary for context: "${resumeData.personalInfo.summary}"`;
-        const suggestion = await generateContentSuggestion(prompt);
-        setAiSummary(suggestion);
-        setIsSummaryLoading(false);
-    };
-
-    return (
-        <div className="space-y-6">
-            <Modal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} title="AI Summary Suggestion">
-                 <div className="whitespace-pre-wrap font-mono text-sm bg-gray-100 p-4 rounded-md overflow-auto max-h-96">{aiSummary}</div>
-            </Modal>
-             <Modal isOpen={isImageEditorOpen} onClose={() => setIsImageEditorOpen(false)} title="Edit Photo with AI">
-                <div className="flex flex-col gap-4">
-                    <p>Enter a prompt to edit your photo, e.g., "make the background a solid blue color" or "give me a more professional look".</p>
-                    <input 
-                        type="text"
-                        value={imageEditPrompt}
-                        onChange={(e) => setImageEditPrompt(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="e.g., remove the background"
-                    />
-                    <button onClick={handleImageEdit} disabled={isImageEditing} className="bg-primary text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-400">
-                        {isImageEditing ? 'Editing...' : <><SparklesIcon /> Generate</>}
-                    </button>
-                </div>
-            </Modal>
-
-            <div className="flex items-center gap-4 flex-wrap">
-                {resumeData.personalInfo.photo ? (
-                     <img src={resumeData.personalInfo.photo} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
-                ) : (
-                    <UserCircleIcon className="w-24 h-24 text-gray-300" />
-                )}
-                <div className="flex flex-col gap-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                        Profile Photo
-                        <input type="file" accept="image/*" onChange={handlePhotoUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"/>
-                    </label>
-                    {resumeData.personalInfo.photo && (
-                        <button onClick={() => setIsImageEditorOpen(true)} className="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 flex items-center gap-1 w-fit"><PencilIcon className="w-4 h-4" /> Edit with AI</button>
-                    )}
-                </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" name="name" placeholder="Name" value={resumeData.personalInfo.name} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-                <input type="text" name="title" placeholder="Title" value={resumeData.personalInfo.title} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-                <input type="email" name="email" placeholder="Email" value={resumeData.personalInfo.email} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-                <input type="tel" name="phone" placeholder="Phone" value={resumeData.personalInfo.phone} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-                <input type="text" name="location" placeholder="Location" value={resumeData.personalInfo.location} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-                <input type="text" name="linkedin" placeholder="LinkedIn Profile" value={resumeData.personalInfo.linkedin} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md"/>
-            </div>
-             <div>
-                <textarea name="summary" placeholder="Professional Summary" value={resumeData.personalInfo.summary} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md h-32"/>
-                <button onClick={handleSummaryAssist} className="mt-2 text-sm bg-blue-100 text-primary px-3 py-1 rounded-md hover:bg-blue-200 flex items-center gap-1"><SparklesIcon /> AI Assist</button>
-            </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
+        <div className="flex items-center gap-4">
+          <img 
+            src={personalInfo.photo || 'https://via.placeholder.com/96'} 
+            alt="Profile Preview" 
+            className="w-24 h-24 rounded-full object-cover bg-gray-200"
+          />
+          <div className="flex flex-col gap-2">
+            <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm"
+            >
+                Upload Photo
+            </button>
+             <input type="file" ref={fileInputRef} onChange={handlePhotoChange} accept="image/*" className="hidden" />
+             {personalInfo.photo && (
+                 <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold py-2 px-4 rounded-md shadow-sm text-sm flex items-center justify-center gap-1"
+                 >
+                    <PencilIcon className="w-4 h-4" />
+                    AI Edit
+                 </button>
+             )}
+          </div>
         </div>
-    );
+      </div>
+      
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Photo with AI">
+          <div className="space-y-4">
+              <p className="text-sm text-gray-600">Describe the changes you'd like to make to your photo. For example: "remove the background", "make it black and white", or "give me a professional-looking blue background".</p>
+              <input 
+                type="text"
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value)}
+                placeholder="e.g., change background to a solid light gray"
+                className="input"
+              />
+              <button
+                onClick={handleImageEdit}
+                disabled={isEditingImage || !editPrompt}
+                className="w-full bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 disabled:bg-gray-400"
+              >
+                  {isEditingImage ? 'Editing...' : 'Generate New Image'}
+              </button>
+          </div>
+      </Modal>
+
+    </div>
+  );
 };
 
 export default PersonalInfoForm;

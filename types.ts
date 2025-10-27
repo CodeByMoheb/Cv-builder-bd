@@ -1,4 +1,4 @@
-
+// FIX: Added type definitions to resolve module and type errors.
 export interface PersonalInfo {
   name: string;
   title: string;
@@ -8,7 +8,7 @@ export interface PersonalInfo {
   linkedin: string;
   website: string;
   summary: string;
-  photo?: string; // base64 string
+  photo: string; // This will store the base64 data URL
 }
 
 export interface Experience {
@@ -36,10 +36,15 @@ export interface Skill {
 }
 
 export interface Project {
-    id: string;
-    name: string;
-    description: string;
-    url: string;
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+}
+
+export interface Language {
+  id: string;
+  name: string;
 }
 
 export interface ResumeData {
@@ -48,7 +53,7 @@ export interface ResumeData {
   education: Education[];
   skills: Skill[];
   projects: Project[];
-  languages: Skill[];
+  languages: Language[];
 }
 
 export interface Template {

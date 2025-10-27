@@ -1,114 +1,129 @@
-import React, { useState, useMemo } from 'react';
+// FIX: Created the content for the missing ResumeEditor.tsx file.
+import React, { useState } from 'react';
 import { ResumeData } from '../types';
 import EditorStepper from './editor/EditorStepper';
 import PersonalInfoForm from './editor/PersonalInfoForm';
 import ExperienceForm from './editor/ExperienceForm';
 import EducationForm from './editor/EducationForm';
 import SkillsProjectsLanguagesForm from './editor/SkillsProjectsLanguagesForm';
-import { ArrowLeftIcon, SparklesIcon } from './ui/Icons';
-import { Modal } from './ui/Modal';
 import { analyzeResume } from '../services/geminiService';
+import { SparklesIcon } from './ui/Icons';
+import { Modal } from './ui/Modal';
+import { marked } from 'marked';
 
 interface ResumeEditorProps {
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
 }
 
-const steps = ['Personal Info', 'Experience', 'Education', 'Skills & More'];
+const STEPS = ['Personal Info', 'Experience', 'Education', 'Skills & More'];
 
-const ResumeEditor: React.FC<ResumeEditorProps> = (props) => {
-    const [currentStep, setCurrentStep] = useState(0);
-    const [visitedSteps, setVisitedSteps] = useState(new Set([0]));
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [aiContent, setAiContent] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData }) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [visitedSteps, setVisitedSteps] = useState(new Set<number>([0]));
+  const [analysisResult, setAnalysisResult] = useState('');
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleNext = () => {
-        if (currentStep < steps.length - 1) {
-            const nextStep = currentStep + 1;
-            setCurrentStep(nextStep);
-            setVisitedSteps(prev => new Set(prev).add(nextStep));
-        }
-    };
+  const handleStepClick = (stepIndex: number) => {
+    setVisitedSteps(prev => new Set(prev).add(currentStep));
+    setCurrentStep(stepIndex);
+  };
 
-    const handleBack = () => {
-        if (currentStep > 0) {
-            setCurrentStep(currentStep - 1);
-        }
-    };
+  const handleNext = () => {
+    setVisitedSteps(prev => new Set(prev).add(currentStep));
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
-    const handleStepClick = (stepIndex: number) => {
-        setCurrentStep(stepIndex);
-        setVisitedSteps(prev => new Set(prev).add(stepIndex));
-    };
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+  
+  const handleAnalyzeResume = async () => {
+    setIsAnalysisLoading(true);
+    setIsModalOpen(true);
+    const result = await analyzeResume(resumeData);
+    const htmlResult = await marked.parse(result);
+    setAnalysisResult(htmlResult);
+    setIsAnalysisLoading(false);
+  };
 
-    const handleAIReview = async () => {
-        setIsLoading(true);
-        setIsModalOpen(true);
-        setAiContent('Analyzing your resume with Gemini Pro...');
-        const analysis = await analyzeResume(props.resumeData);
-        setAiContent(analysis);
-        setIsLoading(false);
-    };
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return <PersonalInfoForm resumeData={resumeData} setResumeData={setResumeData} />;
+      case 1:
+        return <ExperienceForm resumeData={resumeData} setResumeData={setResumeData} />;
+      case 2:
+        return <EducationForm resumeData={resumeData} setResumeData={setResumeData} />;
+      case 3:
+        return <SkillsProjectsLanguagesForm resumeData={resumeData} setResumeData={setResumeData} />;
+      default:
+        return null;
+    }
+  };
 
-    const renderStepContent = () => {
-        switch (currentStep) {
-            case 0:
-                return <PersonalInfoForm {...props} />;
-            case 1:
-                return <ExperienceForm {...props} />;
-            case 2:
-                return <EducationForm {...props} />;
-            case 3:
-                return <SkillsProjectsLanguagesForm {...props} />;
-            default:
-                return null;
-        }
-    };
+  return (
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="mb-8">
+        <EditorStepper
+          steps={STEPS}
+          currentStep={currentStep}
+          visitedSteps={visitedSteps}
+          onStepClick={handleStepClick}
+        />
+      </div>
 
-    return (
-        <div className="flex flex-col h-full">
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="AI Resume Analysis">
-                 <div className="whitespace-pre-wrap font-mono text-sm bg-gray-100 p-4 rounded-md overflow-auto max-h-96" dangerouslySetInnerHTML={{ __html: aiContent.replace(/\n/g, '<br />') }}></div>
-            </Modal>
-            <div className="p-4 border-b">
-                <EditorStepper 
-                    steps={steps} 
-                    currentStep={currentStep} 
-                    onStepClick={handleStepClick}
-                    visitedSteps={visitedSteps}
-                />
+      <div className="min-h-[400px]">
+        {renderStepContent()}
+      </div>
+
+      <div className="mt-8 pt-4 border-t flex justify-between items-center">
+        <button
+          onClick={handleBack}
+          disabled={currentStep === 0}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Back
+        </button>
+        
+        <button
+          onClick={handleAnalyzeResume}
+          disabled={isAnalysisLoading}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors duration-200 disabled:bg-purple-400"
+        >
+          <SparklesIcon className="w-5 h-5" />
+          {isAnalysisLoading ? 'Analyzing...' : 'AI Resume Analysis'}
+        </button>
+
+        <button
+          onClick={handleNext}
+          disabled={currentStep === STEPS.length - 1}
+          className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="AI Resume Analysis">
+        {isAnalysisLoading ? (
+            <div className="flex justify-center items-center h-40">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-            <div className="p-4 sm:p-6 flex-grow overflow-y-auto">
-                {renderStepContent()}
-            </div>
-            <div className="p-4 border-t flex justify-between items-center bg-gray-50/50">
-                <button 
-                    onClick={handleBack} 
-                    disabled={currentStep === 0}
-                    className="flex items-center gap-2 text-gray-600 hover:text-primary disabled:text-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
-                >
-                    <ArrowLeftIcon className="w-4 h-4" /> Previous
-                </button>
-                
-                {currentStep === steps.length - 1 ? (
-                    <button 
-                        onClick={handleAIReview} 
-                        className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-green-600 transition-colors duration-200"
-                    >
-                       <SparklesIcon /> Review with AI
-                    </button>
-                ) : (
-                    <button 
-                        onClick={handleNext} 
-                        className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200"
-                    >
-                       Next
-                    </button>
-                )}
-            </div>
-        </div>
-    );
+        ) : (
+            <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: analysisResult }}
+            />
+        )}
+      </Modal>
+
+    </div>
+  );
 };
 
 export default ResumeEditor;
