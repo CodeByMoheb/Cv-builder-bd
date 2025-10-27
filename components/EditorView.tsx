@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import React, { useState, useRef } from 'react';
 import { ResumeData, Template } from '../types';
 import ResumeEditor from './ResumeEditor';
 import ResumePreview from './ResumePreview';
 import { ArrowLeftIcon, DownloadIcon } from './ui/Icons';
 import PaymentModal from './PaymentModal';
+
+// Extend the Window interface to declare global libraries
+declare global {
+  interface Window {
+    jspdf: any;
+    html2canvas: any;
+  }
+}
 
 interface EditorViewProps {
   template: Template;
@@ -16,37 +22,56 @@ interface EditorViewProps {
 
 const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResumeData, onBack }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
     
-  const executeDownload = () => {
-    // Target the fixed-size inner div for a perfect 1:1 render
-    const previewElement = document.getElementById('pdf-content');
-    if (previewElement) {
-        html2canvas(previewElement, {
-            // The source element is already at full A4 resolution, so scale is 1
-            scale: 1,
-            useCORS: true,
-        }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt',
-                format: 'a4' // [595.28, 841.89] points
-            });
-            
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+  // Custom PDF generation function to replace react-to-print
+  const generatePdf = async () => {
+    const contentToPrint = printRef.current;
+    if (!contentToPrint) {
+      console.error("Content to print is not available.");
+      return;
+    }
+    
+    // Using libraries from the global window object, as they are loaded via <script> tags
+    const { jsPDF } = window.jspdf;
+    const html2canvas = window.html2canvas;
 
-            // The canvas should match the PDF dimensions perfectly now
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`CV_${resumeData.personalInfo.name.replace(' ', '_')}_${template.name}.pdf`);
-        });
+    try {
+      // Use html2canvas to capture the content as an image
+      const canvas = await html2canvas(contentToPrint, {
+        scale: 2, // Increase scale for better resolution
+        useCORS: true, 
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+
+      // Create a new PDF in A4 format
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Add the captured image to the PDF, fitting it to the A4 page
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      // Save the PDF
+      pdf.save(`CV_${resumeData.personalInfo.name.replace(' ', '_')}_${template.name}.pdf`);
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
     }
   };
 
   const handlePaymentSuccess = () => {
     setIsPaymentModalOpen(false);
-    // Add a small delay to allow the modal to close before the download starts
-    setTimeout(executeDownload, 100); 
+    // Add a small delay to allow the modal to close before generating the PDF
+    setTimeout(() => {
+        generatePdf();
+    }, 100); 
   };
 
   return (
@@ -69,14 +94,12 @@ const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResume
           </button>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-          {/* Left column for the editor form, takes up 3/5 of the space on large screens */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 bg-white rounded-lg shadow-md">
             <ResumeEditor resumeData={resumeData} setResumeData={setResumeData} />
           </div>
           
-          {/* Right column for the live preview, takes up 2/5 of the space */}
           <div className="lg:col-span-2 lg:sticky lg:top-24">
-            <ResumePreview template={template} resumeData={resumeData} />
+            <ResumePreview template={template} resumeData={resumeData} ref={printRef} />
           </div>
         </div>
       </div>

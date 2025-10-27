@@ -17,7 +17,7 @@ const TemplatesPage: React.FC<TemplatesPageProps> = ({ onSelectTemplate }) => {
       {TEMPLATE_CATEGORIES.map((category) => (
         <div key={category.name}>
           <h2 className="text-2xl font-semibold text-gray-700 mb-4">{category.name}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
             {category.templates.map((template) => (
               <div
                 key={template.id}
