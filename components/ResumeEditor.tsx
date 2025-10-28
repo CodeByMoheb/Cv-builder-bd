@@ -6,6 +6,7 @@ import PersonalInfoForm from './editor/PersonalInfoForm';
 import ExperienceForm from './editor/ExperienceForm';
 import EducationForm from './editor/EducationForm';
 import SkillsProjectsLanguagesForm from './editor/SkillsProjectsLanguagesForm';
+import TemplateCustomizer from './editor/TemplateCustomizer';
 import { analyzeResume } from '../services/geminiService';
 import { SparklesIcon } from './ui/Icons';
 import { Modal } from './ui/Modal';
@@ -17,7 +18,7 @@ interface ResumeEditorProps {
   template: Template;
 }
 
-const STEPS = ['Personal Info', 'Experience', 'Education', 'Skills & More'];
+const STEPS = ['Personal Info', 'Experience', 'Education', 'Skills & More', 'Customize'];
 
 const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData, template }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -67,6 +68,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData, 
         return <EducationForm resumeData={resumeData} setResumeData={setResumeData} />;
       case 3:
         return <SkillsProjectsLanguagesForm resumeData={resumeData} setResumeData={setResumeData} />;
+      case 4:
+        return <TemplateCustomizer resumeData={resumeData} setResumeData={setResumeData} />;
       default:
         return null;
     }

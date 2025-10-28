@@ -4,7 +4,7 @@ import React from 'react';
 // FIX: Added type definitions to resolve module and type errors.
 export interface PersonalInfo {
   name: string;
-  title: string;
+  title:string;
   email: string;
   phone: string;
   location: string;
@@ -50,6 +50,16 @@ export interface Language {
   name: string;
 }
 
+export interface CustomizationOptions {
+  colors: {
+    primary: string;
+    text: string;
+    background: string;
+  };
+  font: string;
+  sectionOrder: Array<'summary' | 'experience' | 'education' | 'skills' | 'projects' | 'languages'>;
+}
+
 export interface ResumeData {
   personalInfo: PersonalInfo;
   experience: Experience[];
@@ -57,6 +67,7 @@ export interface ResumeData {
   skills: Skill[];
   projects: Project[];
   languages: Language[];
+  customization: CustomizationOptions;
 }
 
 export interface Template {
@@ -69,4 +80,22 @@ export interface Template {
 export interface TemplateCategory {
   name: string;
   templates: Template[];
+}
+
+export interface SavedResume {
+  id: string;
+  userId: string;
+  name: string;
+  resumeData: ResumeData;
+  templateId: string;
+  lastModified: number;
+}
+
+export interface User {
+    id: string;
+    email: string;
+    password: string; // In a real app, this would be a hash
+    role: 'user' | 'admin';
+    name?: string;
+    photo?: string; // base64 data URL
 }

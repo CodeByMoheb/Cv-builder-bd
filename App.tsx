@@ -1,41 +1,148 @@
-
-import React, { useState } from 'react';
-import { ResumeData, Template } from './types';
-import { INITIAL_RESUME_DATA } from './constants';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { ResumeData, Template, SavedResume } from './types';
+import { INITIAL_RESUME_DATA, TEMPLATES_MAP } from './constants';
 import HomePage from './pages/HomePage';
 import TemplatesPage from './pages/TemplatesPage';
 import EditorView from './components/EditorView';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import Layout from './components/Layout';
+import DashboardPage from './pages/DashboardPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import * as api from './services/api';
 
-export type Page = 'home' | 'templates' | 'editor';
+export type Page = 'home' | 'templates' | 'editor' | 'dashboard' | 'login' | 'register' | 'admin';
 
-const App: React.FC = () => {
+declare global {
+  interface Window {
+    jspdf: any;
+    html2canvas: any;
+  }
+}
+
+const AppContent: React.FC = () => {
   const [page, setPage] = useState<Page>('home');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [resumeData, setResumeData] = useState<ResumeData>(INITIAL_RESUME_DATA);
+  const [currentCvId, setCurrentCvId] = useState<string | null>(null);
+  
+  const [resumeForPdf, setResumeForPdf] = useState<SavedResume | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+  
+  const { user, loading } = useContext(AuthContext);
+
+  const protectedPages: Page[] = ['editor', 'dashboard', 'admin'];
+
+  useEffect(() => {
+    // If user is not logged in and tries to access a protected page, redirect to login
+    if (!loading && !user && protectedPages.includes(page)) {
+      setPage('login');
+    }
+    // If user is logged in but not an admin and tries to access admin page, redirect to dashboard
+    if (!loading && user && user.role !== 'admin' && page === 'admin') {
+      setPage('dashboard');
+    }
+  }, [user, page, loading]);
+
+
+  useEffect(() => {
+    if (resumeForPdf) {
+      setTimeout(() => {
+        generatePdf(resumeForPdf.resumeData, TEMPLATES_MAP[resumeForPdf.templateId]);
+        setResumeForPdf(null);
+      }, 100);
+    }
+  }, [resumeForPdf]);
+
+  const generatePdf = async (data: ResumeData, template: Template) => {
+    const contentToPrint = printRef.current;
+    if (!contentToPrint) return;
+    
+    const { jsPDF } = window.jspdf;
+    const html2canvas = window.html2canvas;
+
+    try {
+      const canvas = await html2canvas(contentToPrint, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`CV_${data.personalInfo.name.replace(' ', '_')}_${template.name}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
 
   const handleSelectTemplate = (template: Template) => {
+    if (!user) {
+      navigateTo('login');
+      return;
+    }
     setSelectedTemplate(template);
+    setResumeData(INITIAL_RESUME_DATA);
+    setCurrentCvId(null);
     setPage('editor');
     window.scrollTo(0, 0);
   };
 
   const navigateTo = (targetPage: Page) => {
-    // Reset template when leaving editor to ensure a clean state
     if (page === 'editor' && targetPage !== 'editor') {
       setSelectedTemplate(null);
+      setCurrentCvId(null);
     }
     setPage(targetPage);
-    window.scrollTo(0, 0); // Scroll to top on every page change
+    window.scrollTo(0, 0);
+  };
+
+  const handleSaveCv = async (name: string) => {
+    if (!selectedTemplate) return;
+    
+    if (currentCvId) { // Update
+      await api.updateResume(currentCvId, { name, resumeData });
+    } else { // Create
+      const newCv = await api.createResume({ name, resumeData, templateId: selectedTemplate.id });
+      setCurrentCvId(newCv.id);
+    }
+  };
+
+  const handleEditCv = async (cvId: string) => {
+    const cvToEdit = await api.getResumeById(cvId);
+    if (cvToEdit) {
+      setResumeData(cvToEdit.resumeData);
+      setSelectedTemplate(TEMPLATES_MAP[cvToEdit.templateId]);
+      setCurrentCvId(cvToEdit.id);
+      setPage('editor');
+      window.scrollTo(0, 0);
+    }
+  };
+  
+  const handleDownloadCv = async (cvId: string) => {
+      const cvToDownload = await api.getResumeById(cvId);
+      if (cvToDownload) {
+          setResumeForPdf(cvToDownload);
+      }
   };
 
   const renderPage = () => {
+    if (loading) {
+      return <div className="flex justify-center items-center h-screen"><p>Loading...</p></div>;
+    }
+    
     switch (page) {
       case 'home':
         return <HomePage onNavigate={() => navigateTo('templates')} />;
       case 'templates':
         return <TemplatesPage onSelectTemplate={handleSelectTemplate} />;
+      case 'login':
+        return <LoginPage onNavigate={navigateTo} />;
+      case 'register':
+        return <RegisterPage onNavigate={navigateTo} />;
+      case 'dashboard':
+        return <DashboardPage onEdit={handleEditCv} onDownload={handleDownloadCv} onCreateNew={() => navigateTo('templates')} />;
+      case 'admin':
+        return <AdminDashboardPage />;
       case 'editor':
         if (selectedTemplate) {
           return (
@@ -43,27 +150,39 @@ const App: React.FC = () => {
               template={selectedTemplate}
               resumeData={resumeData}
               setResumeData={setResumeData}
-              onBack={() => navigateTo('templates')}
+              onBack={() => navigateTo(user?.role === 'admin' ? 'admin' : 'dashboard')}
+              onSave={handleSaveCv}
+              currentCvId={currentCvId}
+              onGeneratePdf={() => generatePdf(resumeData, selectedTemplate)}
             />
           );
         }
-        // Fallback: If editor is accessed without a template, redirect to templates page
         navigateTo('templates');
         return null;
       default:
         return <HomePage onNavigate={() => navigateTo('templates')} />;
     }
   };
+  
+  const TemplateForPdf = resumeForPdf ? TEMPLATES_MAP[resumeForPdf.templateId]?.component : null;
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans flex flex-col">
-      <Navbar currentPage={page} onNavigate={navigateTo} />
-      <main className="container mx-auto p-4 md:p-8 flex-grow">
-        {renderPage()}
-      </main>
-      <Footer />
-    </div>
+    <Layout currentPage={page} onNavigate={navigateTo}>
+      {renderPage()}
+      <div className="absolute top-0 left-[-9999px] -z-10" aria-hidden="true">
+        <div ref={printRef} className="bg-white w-[595pt] h-[842pt]">
+           {page === 'editor' && selectedTemplate && <selectedTemplate.component resumeData={resumeData} />}
+           {resumeForPdf && TemplateForPdf && <TemplateForPdf resumeData={resumeForPdf.resumeData} />}
+        </div>
+      </div>
+    </Layout>
   );
 };
+
+const App: React.FC = () => (
+  <AuthProvider>
+    <AppContent />
+  </AuthProvider>
+);
 
 export default App;

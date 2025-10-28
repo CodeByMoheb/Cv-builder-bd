@@ -2,134 +2,98 @@ import React, { useState, useRef } from 'react';
 import { ResumeData, Template } from '../types';
 import ResumeEditor from './ResumeEditor';
 import ResumePreview from './ResumePreview';
-import { ArrowLeftIcon, DownloadIcon, EyeIcon, EyeOffIcon } from './ui/Icons';
+import { ArrowLeftIcon, DownloadIcon, EyeIcon, SaveIcon } from './ui/Icons';
 import PaymentModal from './PaymentModal';
-
-// Extend the Window interface to declare global libraries
-declare global {
-  interface Window {
-    jspdf: any;
-    html2canvas: any;
-  }
-}
 
 interface EditorViewProps {
   template: Template;
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
   onBack: () => void;
+  onSave: (name: string) => Promise<void>;
+  currentCvId: string | null;
+  onGeneratePdf: () => void;
 }
 
-const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResumeData, onBack }) => {
+const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResumeData, onBack, onSave, currentCvId, onGeneratePdf }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
-  const printRef = useRef<HTMLDivElement>(null);
-  const TemplateComponent = template.component;
+  const [isSaving, setIsSaving] = useState(false);
     
-  // Custom PDF generation function to replace react-to-print
-  const generatePdf = async () => {
-    const contentToPrint = printRef.current;
-    if (!contentToPrint) {
-      console.error("Content to print is not available.");
-      return;
-    }
-    
-    // Using libraries from the global window object, as they are loaded via <script> tags
-    const { jsPDF } = window.jspdf;
-    const html2canvas = window.html2canvas;
-
+  const handleSaveClick = async () => {
+    setIsSaving(true);
     try {
-      // Use html2canvas to capture the content as an image
-      const canvas = await html2canvas(contentToPrint, {
-        scale: 2, // Increase scale for better resolution
-        useCORS: true, 
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-
-      // Create a new PDF in A4 format
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Add the captured image to the PDF, fitting it to the A4 page
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-      // Save the PDF
-      pdf.save(`CV_${resumeData.personalInfo.name.replace(' ', '_')}_${template.name}.pdf`);
-
+      if (!currentCvId) {
+        const name = prompt("Please enter a name for your CV:", resumeData.personalInfo.name || "My Resume");
+        if (name) {
+          await onSave(name);
+          alert("CV Saved Successfully!");
+        }
+      } else {
+        await onSave(resumeData.personalInfo.name);
+        alert("CV Updated Successfully!");
+      }
     } catch (error) {
-      console.error("Error generating PDF:", error);
+        alert("Failed to save CV. Please try again.");
+    } finally {
+        setIsSaving(false);
     }
   };
 
   const handlePaymentSuccess = () => {
     setIsPaymentModalOpen(false);
-    // Add a small delay to allow the modal to close before generating the PDF
-    setTimeout(() => {
-        generatePdf();
-    }, 100); 
+    setTimeout(onGeneratePdf, 100); 
   };
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center flex-wrap gap-2">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors duration-200"
-          >
-            <ArrowLeftIcon />
-            Back to Templates
-          </button>
-          <div className="flex items-center gap-2">
+      <div className="bg-secondary px-4 md:px-8 py-3 sticky top-[72px] z-20 border-b">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
             <button
-              onClick={() => setIsPreviewVisible(!isPreviewVisible)}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200"
+              onClick={onBack}
+              className="flex items-center gap-2 text-muted hover:text-primary transition-colors duration-200 text-sm font-medium"
             >
-              {isPreviewVisible ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
-              {isPreviewVisible ? 'Hide Preview' : 'Show Preview'}
+              <ArrowLeftIcon />
+              Back to Dashboard
             </button>
-            <button
-                onClick={() => setIsPaymentModalOpen(true)}
-                className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-                <DownloadIcon />
-                Download as PDF
-            </button>
+            <div className="flex items-center gap-3">
+               <button
+                  onClick={handleSaveClick}
+                  disabled={isSaving}
+                  className="bg-white border border-gray-300 hover:bg-gray-100 text-dark font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 text-sm disabled:opacity-50"
+              >
+                  <SaveIcon className="w-5 h-5"/>
+                  {isSaving ? 'Saving...' : (currentCvId ? 'Save' : 'Save As')}
+              </button>
+              <button
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="bg-primary hover:bg-opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md text-sm"
+              >
+                  <DownloadIcon />
+                  Download
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-1 gap-8 items-start">
-          <div className="bg-white rounded-lg shadow-md lg:col-span-3">
+      </div>
+      
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div className="bg-white rounded-lg shadow-lg border">
             <ResumeEditor 
               resumeData={resumeData} 
               setResumeData={setResumeData} 
               template={template} 
             />
           </div>
+
+          <div className="hidden lg:block sticky top-[150px]">
+            <ResumePreview 
+              template={template} 
+              resumeData={resumeData} 
+            />
+          </div>
         </div>
       </div>
       
-      {/* Visual, draggable preview */}
-      <ResumePreview 
-        template={template} 
-        resumeData={resumeData} 
-        isOpen={isPreviewVisible}
-        onClose={() => setIsPreviewVisible(false)}
-      />
-
-      {/* Hidden container for high-quality, full-scale PDF generation */}
-      <div className="absolute top-0 left-[-9999px] -z-10" aria-hidden="true">
-        <div ref={printRef} className="bg-white w-[595pt] h-[842pt]">
-          <TemplateComponent resumeData={resumeData} />
-        </div>
-      </div>
-
       <PaymentModal 
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}

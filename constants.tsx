@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResumeData, TemplateCategory } from './types';
+import { ResumeData, Template, TemplateCategory, CustomizationOptions } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Import all template components
@@ -30,6 +30,24 @@ import { PortfolioTemplate } from './components/templates/PortfolioTemplate';
 import { CleanHeaderTemplate } from './components/templates/CleanHeaderTemplate';
 import { GalleryTemplate } from './components/templates/GalleryTemplate';
 
+export const DEFAULT_SECTION_ORDER: CustomizationOptions['sectionOrder'] = [
+  'summary',
+  'experience',
+  'education',
+  'skills',
+  'projects',
+  'languages',
+];
+
+export const DEFAULT_CUSTOMIZATION: CustomizationOptions = {
+  colors: {
+    primary: '#5846E0',
+    text: '#1E293B',
+    background: '#FFFFFF',
+  },
+  font: 'Roboto, sans-serif',
+  sectionOrder: DEFAULT_SECTION_ORDER,
+};
 
 export const INITIAL_RESUME_DATA: ResumeData = {
   personalInfo: {
@@ -118,6 +136,7 @@ export const INITIAL_RESUME_DATA: ResumeData = {
     { id: uuidv4(), name: 'English (Native)' },
     { id: uuidv4(), name: 'Spanish (Professional)' },
   ],
+  customization: DEFAULT_CUSTOMIZATION,
 };
 
 export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
@@ -173,3 +192,9 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
         ]
     }
 ];
+
+// Create a map for quick template lookup by ID
+export const TEMPLATES_MAP: Record<string, Template> = TEMPLATE_CATEGORIES.flatMap(category => category.templates).reduce((acc, template) => {
+    acc[template.id] = template;
+    return acc;
+}, {} as Record<string, Template>);

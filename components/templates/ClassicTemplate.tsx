@@ -2,37 +2,26 @@
 import React from 'react';
 import { ResumeData } from '../../types';
 
+const Section: React.FC<{ title: string; children: React.ReactNode, color: string }> = ({ title, children, color }) => (
+  <section className="mb-6">
+    <h2 className="text-xl font-bold border-b-2 pb-2 mb-3" style={{ borderColor: '#D1D5DB' }}>{title}</h2>
+    {children}
+  </section>
+);
+
 export const ClassicTemplate: React.FC<{ resumeData: ResumeData }> = ({ resumeData }) => {
-  const { personalInfo, experience, education, skills, projects, languages } = resumeData;
+  const { customization, ...data } = resumeData;
+  const { colors, font } = customization;
 
-  return (
-    <div className="bg-white p-10 font-serif text-gray-900">
-      <header className="text-center mb-8">
-        <h1 className="text-4xl font-bold uppercase tracking-widest">{personalInfo.name}</h1>
-        <p className="text-lg text-gray-700 mt-1">{personalInfo.title}</p>
-        <div className="flex justify-center gap-x-4 mt-4 text-sm text-gray-600 flex-wrap">
-          <span>{personalInfo.email}</span>
-          <span>|</span>
-          <span>{personalInfo.phone}</span>
-          <span>|</span>
-          <span>{personalInfo.location}</span>
-          {personalInfo.linkedin && (
-            <>
-              <span>|</span>
-              <span>{personalInfo.linkedin}</span>
-            </>
-          )}
-        </div>
-      </header>
-
-      <section className="mb-6">
-        <h2 className="text-xl font-bold border-b-2 border-gray-300 pb-2 mb-3">Summary</h2>
-        <p className="text-sm leading-relaxed">{personalInfo.summary}</p>
-      </section>
-
-      <section className="mb-6">
-        <h2 className="text-xl font-bold border-b-2 border-gray-300 pb-2 mb-3">Experience</h2>
-        {experience.map(exp => (
+  const sectionsMap: Record<string, React.ReactNode> = {
+    summary: (
+      <Section key="summary" title="Summary" color={colors.primary}>
+        <p className="text-sm leading-relaxed">{data.personalInfo.summary}</p>
+      </Section>
+    ),
+    experience: (
+      <Section key="experience" title="Experience" color={colors.primary}>
+        {data.experience.map(exp => (
           <div key={exp.id} className="mb-4">
             <div className="flex justify-between items-baseline">
               <h3 className="text-lg font-semibold">{exp.title}</h3>
@@ -44,11 +33,11 @@ export const ClassicTemplate: React.FC<{ resumeData: ResumeData }> = ({ resumeDa
             </ul>
           </div>
         ))}
-      </section>
-      
-      <section className="mb-6">
-        <h2 className="text-xl font-bold border-b-2 border-gray-300 pb-2 mb-3">Education</h2>
-        {education.map(edu => (
+      </Section>
+    ),
+    education: (
+      <Section key="education" title="Education" color={colors.primary}>
+        {data.education.map(edu => (
           <div key={edu.id} className="mb-3">
              <div className="flex justify-between items-baseline">
                 <h3 className="text-lg font-semibold">{edu.institution}</h3>
@@ -57,31 +46,52 @@ export const ClassicTemplate: React.FC<{ resumeData: ResumeData }> = ({ resumeDa
             <p className="text-md text-gray-700">{edu.degree}, {edu.fieldOfStudy}</p>
           </div>
         ))}
-      </section>
+      </Section>
+    ),
+    skills: (
+      <Section key="skills" title="Skills" color={colors.primary}>
+        <p className="text-sm leading-relaxed">{data.skills.map(skill => skill.name).join(' • ')}</p>
+      </Section>
+    ),
+    projects: data.projects.length > 0 && (
+      <Section key="projects" title="Projects" color={colors.primary}>
+        {data.projects.map(proj => (
+          <div key={proj.id} className="mb-3">
+            <h3 className="text-lg font-semibold">{proj.name}</h3>
+            <p className="text-sm text-gray-700">{proj.description}</p>
+          </div>
+        ))}
+      </Section>
+    ),
+    languages: data.languages.length > 0 && (
+      <Section key="languages" title="Languages" color={colors.primary}>
+        <p className="text-sm leading-relaxed">{data.languages.map(lang => lang.name).join(', ')}</p>
+      </Section>
+    ),
+  };
 
-      <section className="mb-6">
-        <h2 className="text-xl font-bold border-b-2 border-gray-300 pb-2 mb-3">Skills</h2>
-        <p className="text-sm leading-relaxed">{skills.map(skill => skill.name).join(' • ')}</p>
-      </section>
+  return (
+    <div className="p-10 font-serif" style={{ backgroundColor: colors.background, color: colors.text, fontFamily: font }}>
+      <header className="text-center mb-8">
+        <h1 className="text-4xl font-bold uppercase tracking-widest">{data.personalInfo.name}</h1>
+        <p className="text-lg mt-1" style={{color: colors.primary}}>{data.personalInfo.title}</p>
+        <div className="flex justify-center gap-x-4 mt-4 text-sm text-gray-600 flex-wrap">
+          <span>{data.personalInfo.email}</span>
+          <span>|</span>
+          <span>{data.personalInfo.phone}</span>
+          <span>|</span>
+          <span>{data.personalInfo.location}</span>
+          {data.personalInfo.linkedin && (
+            <>
+              <span>|</span>
+              <span>{data.personalInfo.linkedin}</span>
+            </>
+          )}
+        </div>
+      </header>
+      
+      {customization.sectionOrder.map(key => sectionsMap[key])}
 
-      {projects.length > 0 && (
-         <section className="mb-6">
-            <h2 className="text-xl font-bold border-b-2 border-gray-300 pb-2 mb-3">Projects</h2>
-            {projects.map(proj => (
-            <div key={proj.id} className="mb-3">
-                <h3 className="text-lg font-semibold">{proj.name}</h3>
-                <p className="text-sm text-gray-700">{proj.description}</p>
-            </div>
-            ))}
-        </section>
-      )}
-
-      {languages.length > 0 && (
-        <section>
-            <h2 className="text-xl font-bold border-b-2 border-gray-300 pb-2 mb-3">Languages</h2>
-            <p className="text-sm leading-relaxed">{languages.map(lang => lang.name).join(', ')}</p>
-        </section>
-      )}
     </div>
   );
 };
