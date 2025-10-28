@@ -2,7 +2,7 @@
 import React from 'react';
 import { ResumeData } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
-import { TrashIcon, PlusIcon } from '../ui/Icons';
+import { TrashIcon, PlusIcon, PresentationChartLineIcon } from '../ui/Icons';
 
 interface SkillsProjectsLanguagesFormProps {
   resumeData: ResumeData;
@@ -61,43 +61,64 @@ const SkillsProjectsLanguagesForm: React.FC<SkillsProjectsLanguagesFormProps> = 
     };
 
     return (
-        <div className="space-y-8 animate-fadeIn">
-            <EditableList
-                items={resumeData.skills}
-                onAdd={addSkill}
-                onRemove={removeSkill}
-                onUpdate={updateSkill}
-                title="Skills"
-                placeholder="e.g., React"
-            />
+        <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-8 animate-fadeIn">
+            <div className="space-y-8">
+                <EditableList
+                    items={resumeData.skills}
+                    onAdd={addSkill}
+                    onRemove={removeSkill}
+                    onUpdate={updateSkill}
+                    title="Skills"
+                    placeholder="e.g., React"
+                />
+                
+                <EditableList
+                    items={resumeData.languages}
+                    onAdd={addLanguage}
+                    onRemove={removeLanguage}
+                    onUpdate={updateLanguage}
+                    title="Languages"
+                    placeholder="e.g., English (Native)"
+                />
+            </div>
 
             <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Projects</h3>
                 <div className="space-y-4">
-                    {resumeData.projects.map(proj => (
-                         <div key={proj.id} className="p-4 border rounded-lg space-y-3 bg-gray-50/50 relative">
-                             <button onClick={() => removeProject(proj.id)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500">
-                                <TrashIcon />
-                             </button>
-                             <input type="text" name="name" placeholder="Project Name" value={proj.name} onChange={e => updateProject(proj.id, e)} className="input" />
-                             <textarea name="description" placeholder="Project Description" value={proj.description} onChange={e => updateProject(proj.id, e)} className="input h-20 resize-none" />
-                             <input type="text" name="url" placeholder="Project URL (optional)" value={proj.url} onChange={e => updateProject(proj.id, e)} className="input" />
-                         </div>
-                    ))}
+                    {resumeData.projects.length === 0 ? (
+                        <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                            <PresentationChartLineIcon className="mx-auto h-10 w-10 text-gray-400" />
+                            <h3 className="mt-2 text-md font-medium text-gray-900">Showcase Your Projects</h3>
+                            <p className="mt-1 text-xs text-gray-500">
+                                Add personal or professional projects to highlight your skills.
+                            </p>
+                        </div>
+                    ) : (
+                        resumeData.projects.map(proj => (
+                             <div key={proj.id} className="p-4 border rounded-lg space-y-3 bg-gray-50/50 relative">
+                                 <button onClick={() => removeProject(proj.id)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500">
+                                    <TrashIcon />
+                                 </button>
+                                 <div>
+                                   <label htmlFor={`proj-name-${proj.id}`} className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                                   <input type="text" id={`proj-name-${proj.id}`} name="name" placeholder="e.g., Portfolio Website" value={proj.name} onChange={e => updateProject(proj.id, e)} className="input" />
+                                 </div>
+                                 <div>
+                                   <label htmlFor={`proj-desc-${proj.id}`} className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                   <textarea id={`proj-desc-${proj.id}`} name="description" placeholder="A short description of your project..." value={proj.description} onChange={e => updateProject(proj.id, e)} className="input h-20 resize-none" />
+                                 </div>
+                                 <div>
+                                   <label htmlFor={`proj-url-${proj.id}`} className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                                   <input type="text" id={`proj-url-${proj.id}`} name="url" placeholder="e.g., github.com/user/repo" value={proj.url} onChange={e => updateProject(proj.id, e)} className="input" />
+                                 </div>
+                             </div>
+                        ))
+                    )}
                 </div>
                 <button onClick={addProject} className="mt-2 text-sm text-primary hover:underline flex items-center gap-1">
                     <PlusIcon /> Add Project
                 </button>
             </div>
-            
-            <EditableList
-                items={resumeData.languages}
-                onAdd={addLanguage}
-                onRemove={removeLanguage}
-                onUpdate={updateLanguage}
-                title="Languages"
-                placeholder="e.g., English (Native)"
-            />
         </div>
     );
 };

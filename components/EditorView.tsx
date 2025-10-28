@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ResumeData, Template } from '../types';
 import ResumeEditor from './ResumeEditor';
 import ResumePreview from './ResumePreview';
-import { ArrowLeftIcon, DownloadIcon } from './ui/Icons';
+import { ArrowLeftIcon, DownloadIcon, EyeIcon, EyeOffIcon } from './ui/Icons';
 import PaymentModal from './PaymentModal';
 
 // Extend the Window interface to declare global libraries
@@ -22,7 +22,9 @@ interface EditorViewProps {
 
 const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResumeData, onBack }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
+  const TemplateComponent = template.component;
     
   // Custom PDF generation function to replace react-to-print
   const generatePdf = async () => {
@@ -77,7 +79,7 @@ const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResume
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-2">
           <button
             onClick={onBack}
             className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors duration-200"
@@ -85,24 +87,49 @@ const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResume
             <ArrowLeftIcon />
             Back to Templates
           </button>
-          <button
-              onClick={() => setIsPaymentModalOpen(true)}
-              className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-          >
-              <DownloadIcon />
-              Download as PDF
-          </button>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-          <div className="lg:col-span-3 bg-white rounded-lg shadow-md">
-            <ResumeEditor resumeData={resumeData} setResumeData={setResumeData} />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsPreviewVisible(!isPreviewVisible)}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200"
+            >
+              {isPreviewVisible ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+              {isPreviewVisible ? 'Hide Preview' : 'Show Preview'}
+            </button>
+            <button
+                onClick={() => setIsPaymentModalOpen(true)}
+                className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+                <DownloadIcon />
+                Download as PDF
+            </button>
           </div>
-          
-          <div className="lg:col-span-2 lg:sticky lg:top-24">
-            <ResumePreview template={template} resumeData={resumeData} ref={printRef} />
+        </div>
+        <div className="grid grid-cols-1 gap-8 items-start">
+          <div className="bg-white rounded-lg shadow-md lg:col-span-3">
+            <ResumeEditor 
+              resumeData={resumeData} 
+              setResumeData={setResumeData} 
+              template={template} 
+            />
           </div>
         </div>
       </div>
+      
+      {/* Visual, draggable preview */}
+      <ResumePreview 
+        template={template} 
+        resumeData={resumeData} 
+        isOpen={isPreviewVisible}
+        onClose={() => setIsPreviewVisible(false)}
+      />
+
+      {/* Hidden container for high-quality, full-scale PDF generation */}
+      <div className="absolute top-0 left-[-9999px] -z-10" aria-hidden="true">
+        <div ref={printRef} className="bg-white w-[595pt] h-[842pt]">
+          <TemplateComponent resumeData={resumeData} />
+        </div>
+      </div>
+
       <PaymentModal 
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}

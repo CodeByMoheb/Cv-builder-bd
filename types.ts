@@ -1,3 +1,6 @@
+// FIX: Import React to provide the React namespace for types like React.FC.
+import React from 'react';
+
 // FIX: Added type definitions to resolve module and type errors.
 export interface PersonalInfo {
   name: string;
@@ -60,6 +63,7 @@ export interface Template {
   id: string;
   name: string;
   component: React.FC<{ resumeData: ResumeData }>;
+  hasPhoto?: boolean;
 }
 
 export interface TemplateCategory {

@@ -7,9 +7,10 @@ import { Modal } from '../ui/Modal';
 interface PersonalInfoFormProps {
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
+  hasPhoto: boolean;
 }
 
-const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ resumeData, setResumeData }) => {
+const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ resumeData, setResumeData, hasPhoto }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -98,59 +99,83 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ resumeData, setResu
 
 
   return (
-    <div className="space-y-4 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn">
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="text" name="name" placeholder="Full Name" value={personalInfo.name} onChange={handleChange} className="input" />
-        <input type="text" name="title" placeholder="Job Title (e.g., Senior Software Engineer)" value={personalInfo.title} onChange={handleChange} className="input" />
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="e.g., Zidan Ahmed" value={personalInfo.name} onChange={handleChange} className="input" />
+        </div>
+        <div>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+          <input type="text" id="title" name="title" placeholder="e.g., Senior Software Engineer" value={personalInfo.title} onChange={handleChange} className="input" />
+        </div>
       </div>
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="email" name="email" placeholder="Email Address" value={personalInfo.email} onChange={handleChange} className="input" />
-        <input type="tel" name="phone" placeholder="Phone Number" value={personalInfo.phone} onChange={handleChange} className="input" />
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="e.g., zidan.ahmed@example.com" value={personalInfo.email} onChange={handleChange} className="input" />
+        </div>
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <input type="tel" id="phone" name="phone" placeholder="e.g., (123) 456-7890" value={personalInfo.phone} onChange={handleChange} className="input" />
+        </div>
       </div>
-      <input type="text" name="location" placeholder="Location (e.g., San Francisco, CA)" value={personalInfo.location} onChange={handleChange} className="input" />
+      <div>
+        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+        <input type="text" id="location" name="location" placeholder="e.g., San Francisco, CA" value={personalInfo.location} onChange={handleChange} className="input" />
+      </div>
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="text" name="linkedin" placeholder="LinkedIn Profile URL" value={personalInfo.linkedin} onChange={handleChange} className="input" />
-        <input type="text" name="website" placeholder="Personal Website/Portfolio" value={personalInfo.website} onChange={handleChange} className="input" />
+        <div>
+          <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-1">LinkedIn Profile</label>
+          <input type="text" id="linkedin" name="linkedin" placeholder="e.g., linkedin.com/in/zidan.dev" value={personalInfo.linkedin} onChange={handleChange} className="input" />
+        </div>
+        <div>
+          <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">Website/Portfolio</label>
+          <input type="text" id="website" name="website" placeholder="e.g., zidan.dev" value={personalInfo.website} onChange={handleChange} className="input" />
+        </div>
       </div>
 
       <div className="relative">
-        <textarea name="summary" placeholder="Professional Summary" value={personalInfo.summary} onChange={handleChange} className="input h-28 resize-none" />
+        <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
+        <textarea id="summary" name="summary" placeholder="Write a brief summary about your professional background..." value={personalInfo.summary} onChange={handleChange} className="input h-28 resize-none" />
         <button onClick={generateSummary} disabled={isGenerating} className="absolute bottom-2 right-2 bg-primary/20 text-primary hover:bg-primary/30 text-xs font-bold py-1 px-2 rounded-md flex items-center gap-1 disabled:opacity-50">
           <SparklesIcon className="w-4 h-4" />
           {isGenerating ? 'Generating...' : 'AI Suggestion'}
         </button>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
-        <div className="flex items-center gap-4">
-          <img 
-            src={personalInfo.photo || 'https://via.placeholder.com/96'} 
-            alt="Profile Preview" 
-            className="w-24 h-24 rounded-full object-cover bg-gray-200"
-          />
-          <div className="flex flex-col gap-2">
-            <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm"
-            >
-                Upload Photo
-            </button>
-             <input type="file" ref={fileInputRef} onChange={handlePhotoChange} accept="image/*" className="hidden" />
-             {personalInfo.photo && (
-                 <button
+      {hasPhoto && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
+          <div className="flex items-center gap-4">
+            <img 
+              src={personalInfo.photo || 'https://via.placeholder.com/96'} 
+              alt="Profile Preview" 
+              className="w-24 h-24 rounded-full object-cover bg-gray-200"
+            />
+            <div className="flex flex-col gap-2">
+              <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm"
+              >
+                  Upload Photo
+              </button>
+              <input type="file" ref={fileInputRef} onChange={handlePhotoChange} accept="image/*" className="hidden" />
+              {personalInfo.photo && (
+                  <button
                     type="button"
                     onClick={() => setIsEditModalOpen(true)}
                     className="bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold py-2 px-4 rounded-md shadow-sm text-sm flex items-center justify-center gap-1"
-                 >
-                    <PencilIcon className="w-4 h-4" />
-                    AI Edit
-                 </button>
-             )}
+                  >
+                      <PencilIcon className="w-4 h-4" />
+                      AI Edit
+                  </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Photo with AI">
           <div className="space-y-4">

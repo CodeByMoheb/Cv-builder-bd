@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircleIcon } from '../ui/Icons';
+import { CheckIcon } from '../ui/Icons';
 
 interface EditorStepperProps {
     steps: string[];
@@ -11,40 +11,44 @@ interface EditorStepperProps {
 const EditorStepper: React.FC<EditorStepperProps> = ({ steps, currentStep, visitedSteps, onStepClick }) => {
     return (
         <nav aria-label="Progress">
-            <ol role="list" className="space-y-4 md:flex md:space-x-8 md:space-y-0">
+            <ol role="list" className="flex items-start">
                 {steps.map((stepName, stepIdx) => {
                     const isCompleted = visitedSteps.has(stepIdx) && currentStep !== stepIdx;
                     const isActive = currentStep === stepIdx;
 
                     return (
-                        <li key={stepName} className="md:flex-1">
+                        <li key={stepName} className="relative flex-1">
+                            {/* Connecting line */}
+                            {stepIdx > 0 && (
+                                <div className="absolute inset-0 right-1/2 flex items-center mt-4" aria-hidden="true">
+                                    <div className={`h-0.5 w-full transition-colors duration-300 ${isCompleted || isActive ? 'bg-primary' : 'bg-gray-300'}`}></div>
+                                </div>
+                            )}
+
                             <a
                                 href="#"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     onStepClick(stepIdx);
                                 }}
-                                className={`group flex flex-col border-l-4 py-2 pl-4 transition-colors md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0 ${
-                                    isActive
-                                        ? 'border-primary'
-                                        : isCompleted
-                                        ? 'border-green-600 hover:border-green-800'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                }`}
+                                className="relative flex flex-col items-center justify-center gap-2 group"
                                 aria-current={isActive ? 'step' : undefined}
                             >
-                                <span className={`text-sm font-medium transition-colors ${
-                                    isActive
-                                        ? 'text-primary'
-                                        : isCompleted
-                                        ? 'text-green-600 group-hover:text-green-800'
-                                        : 'text-gray-500 group-hover:text-gray-700'
-                                }`}>
-                                    Step {stepIdx + 1}
-                                </span>
-                                <span className="text-sm font-medium flex items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
+                                    ${isActive ? 'bg-primary ring-4 ring-primary/20' : isCompleted ? 'bg-primary' : 'bg-gray-300 group-hover:bg-gray-400'}
+                                `}>
+                                    {isCompleted ? (
+                                        <CheckIcon className="w-5 h-5 text-white" />
+                                    ) : (
+                                        <span className={`font-bold transition-colors ${isActive ? 'text-white' : 'text-gray-600'}`}>
+                                            {stepIdx + 1}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className={`text-xs sm:text-sm text-center font-medium transition-colors duration-300
+                                    ${isActive ? 'text-primary' : 'text-gray-500'}
+                                `}>
                                     {stepName}
-                                    {isCompleted && <CheckCircleIcon className="w-5 h-5 ml-2 text-green-600" />}
                                 </span>
                             </a>
                         </li>

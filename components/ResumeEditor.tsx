@@ -1,6 +1,6 @@
 // FIX: Created the content for the missing ResumeEditor.tsx file.
 import React, { useState } from 'react';
-import { ResumeData } from '../types';
+import { ResumeData, Template } from '../types';
 import EditorStepper from './editor/EditorStepper';
 import PersonalInfoForm from './editor/PersonalInfoForm';
 import ExperienceForm from './editor/ExperienceForm';
@@ -14,11 +14,12 @@ import { marked } from 'marked';
 interface ResumeEditorProps {
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
+  template: Template;
 }
 
 const STEPS = ['Personal Info', 'Experience', 'Education', 'Skills & More'];
 
-const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData }) => {
+const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData, template }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [visitedSteps, setVisitedSteps] = useState(new Set<number>([0]));
   const [analysisResult, setAnalysisResult] = useState('');
@@ -55,7 +56,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData }
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
-        return <PersonalInfoForm resumeData={resumeData} setResumeData={setResumeData} />;
+        return <PersonalInfoForm 
+                  resumeData={resumeData} 
+                  setResumeData={setResumeData} 
+                  hasPhoto={template.hasPhoto || false}
+                />;
       case 1:
         return <ExperienceForm resumeData={resumeData} setResumeData={setResumeData} />;
       case 2:
@@ -82,11 +87,11 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData }
         {renderStepContent()}
       </div>
 
-      <div className="mt-8 pt-4 border-t flex justify-between items-center">
+      <div className="mt-8 pt-4 border-t flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-3">
         <button
           onClick={handleBack}
           disabled={currentStep === 0}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Back
         </button>
@@ -94,7 +99,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData }
         <button
           onClick={handleAnalyzeResume}
           disabled={isAnalysisLoading}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors duration-200 disabled:bg-purple-400"
+          className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors duration-200 disabled:bg-purple-400"
         >
           <SparklesIcon className="w-5 h-5" />
           {isAnalysisLoading ? 'Analyzing...' : 'AI Resume Analysis'}
@@ -103,7 +108,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeData, setResumeData }
         <button
           onClick={handleNext}
           disabled={currentStep === STEPS.length - 1}
-          className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>

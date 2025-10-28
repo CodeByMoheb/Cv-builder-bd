@@ -19,6 +19,16 @@ import { TwoToneTemplate } from './components/templates/TwoToneTemplate';
 import { AcademicTemplate } from './components/templates/AcademicTemplate';
 import { BoldHeaderTemplate } from './components/templates/BoldHeaderTemplate';
 import { GridTemplate } from './components/templates/GridTemplate';
+import { ElegantTemplate } from './components/templates/ElegantTemplate';
+import { SidebarTemplate } from './components/templates/SidebarTemplate';
+import { ProfessionalTemplate } from './components/templates/ProfessionalTemplate';
+import { VibrantTemplate } from './components/templates/VibrantTemplate';
+import { MonogramTemplate } from './components/templates/MonogramTemplate';
+import { SharpTemplate } from './components/templates/SharpTemplate';
+import { ImpactfulTemplate } from './components/templates/ImpactfulTemplate';
+import { PortfolioTemplate } from './components/templates/PortfolioTemplate';
+import { CleanHeaderTemplate } from './components/templates/CleanHeaderTemplate';
+import { GalleryTemplate } from './components/templates/GalleryTemplate';
 
 
 export const INITIAL_RESUME_DATA: ResumeData = {
@@ -114,42 +124,52 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
     {
         name: 'Modern & Clean',
         templates: [
-            { id: 'modern', name: 'Modern', component: ModernTemplate },
-            { id: 'tech', name: 'Tech', component: TechTemplate },
-            { id: 'minimalist', name: 'Minimalist', component: MinimalistTemplate },
-            { id: 'swiss', name: 'Swiss', component: SwissTemplate },
-            { id: 'grid', name: 'Grid-Based', component: GridTemplate },
-            { id: 'bold-header', name: 'Bold Header', component: BoldHeaderTemplate },
+            { id: 'modern', name: 'Modern', component: ModernTemplate, hasPhoto: true },
+            { id: 'sidebar', name: 'Sidebar', component: SidebarTemplate, hasPhoto: true },
+            { id: 'clean-header', name: 'Clean Header', component: CleanHeaderTemplate, hasPhoto: true },
+            { id: 'sharp', name: 'Sharp', component: SharpTemplate, hasPhoto: true },
+            { id: 'tech', name: 'Tech', component: TechTemplate, hasPhoto: false },
+            { id: 'minimalist', name: 'Minimalist', component: MinimalistTemplate, hasPhoto: false },
+            { id: 'swiss', name: 'Swiss', component: SwissTemplate, hasPhoto: false },
+            { id: 'grid', name: 'Grid-Based', component: GridTemplate, hasPhoto: false },
+            { id: 'bold-header', name: 'Bold Header', component: BoldHeaderTemplate, hasPhoto: false },
         ],
     },
     {
         name: 'Professional & Corporate',
         templates: [
-            { id: 'executive', name: 'Executive', component: ExecutiveTemplate },
-            { id: 'corporate', name: 'Corporate', component: CorporateTemplate },
-            { id: 'data-driven', name: 'Data-Driven', component: DataDrivenTemplate },
-            { id: 'corporate-blue', name: 'Corporate Blue', component: CorporateTemplate }, // Variation
-            { id: 'classic-serif', name: 'Classic Serif', component: ClassicTemplate },
+            { id: 'executive', name: 'Executive', component: ExecutiveTemplate, hasPhoto: true },
+            { id: 'professional', name: 'Professional', component: ProfessionalTemplate, hasPhoto: true },
+            { id: 'corporate', name: 'Corporate', component: CorporateTemplate, hasPhoto: true },
+            { id: 'elegant', name: 'Elegant', component: ElegantTemplate, hasPhoto: true },
+            { id: 'data-driven', name: 'Data-Driven', component: DataDrivenTemplate, hasPhoto: false },
+            { id: 'corporate-blue', name: 'Corporate Blue', component: CorporateTemplate, hasPhoto: true },
+            { id: 'classic-serif', name: 'Classic Serif', component: ClassicTemplate, hasPhoto: false },
         ],
     },
     {
         name: 'Creative & Visual',
         templates: [
-            { id: 'creative', name: 'Creative', component: CreativeTemplate },
-            { id: 'infographic', name: 'Infographic', component: InfographicTemplate },
-            { id: 'geographic', name: 'Geographic', component: GeographicTemplate },
-            { id: 'timeline', name: 'Timeline', component: TimelineTemplate },
-            { id: 'two-tone', name: 'Two-Tone', component: TwoToneTemplate },
-            { id: 'creative-dark', name: 'Creative Dark', component: CreativeTemplate }, // Variation
+            { id: 'creative', name: 'Creative', component: CreativeTemplate, hasPhoto: true },
+            { id: 'impactful', name: 'Impactful', component: ImpactfulTemplate, hasPhoto: true },
+            { id: 'vibrant', name: 'Vibrant', component: VibrantTemplate, hasPhoto: true },
+            { id: 'monogram', name: 'Monogram', component: MonogramTemplate, hasPhoto: true },
+            { id: 'portfolio', name: 'Portfolio', component: PortfolioTemplate, hasPhoto: true },
+            { id: 'gallery', name: 'Gallery', component: GalleryTemplate, hasPhoto: true },
+            { id: 'infographic', name: 'Infographic', component: InfographicTemplate, hasPhoto: true },
+            { id: 'geographic', name: 'Geographic', component: GeographicTemplate, hasPhoto: false },
+            { id: 'timeline', name: 'Timeline', component: TimelineTemplate, hasPhoto: false },
+            { id: 'two-tone', name: 'Two-Tone', component: TwoToneTemplate, hasPhoto: false },
+            { id: 'creative-dark', name: 'Creative Dark', component: CreativeTemplate, hasPhoto: true },
         ],
     },
     {
         name: 'Formal & Academic',
         templates: [
-            { id: 'classic', name: 'Classic', component: ClassicTemplate },
-            { id: 'academic', name: 'Academic CV', component: AcademicTemplate },
-            { id: 'timeline-formal', name: 'Formal Timeline', component: TimelineTemplate }, // Variation
-            { id: 'executive-plain', name: 'Plain Executive', component: ExecutiveTemplate }, // Variation
+            { id: 'classic', name: 'Classic', component: ClassicTemplate, hasPhoto: false },
+            { id: 'academic', name: 'Academic CV', component: AcademicTemplate, hasPhoto: false },
+            { id: 'timeline-formal', name: 'Formal Timeline', component: TimelineTemplate, hasPhoto: false },
+            { id: 'executive-plain', name: 'Plain Executive', component: ExecutiveTemplate, hasPhoto: true },
         ]
     }
 ];
