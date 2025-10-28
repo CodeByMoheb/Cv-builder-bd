@@ -1,68 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CVBuilderBD: AI-Powered Resume Builder</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              primary: '#5846E0', // Main brand color like cvbox
-              secondary: '#F8F9FA', // Light gray background
-              accent: '#4FD1C5', // A complementary accent color
-              dark: '#1E293B', // For main headings and text
-              muted: '#64748B', // For subtitles and secondary text
+              primary: '#5846E0', // A nice vibrant blue/purple
+              secondary: '#F8F9FA', // A very light gray for backgrounds
+              dark: '#1E293B', // A dark slate for text
+              muted: '#64748B', // A lighter slate for secondary text
             },
-            fontFamily: {
-              sans: ['Roboto', 'sans-serif'],
-            }
           }
         }
       }
     </script>
+
     <style>
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+      /* General styles */
+      body {
+        background-color: #F8F9FA; /* secondary */
+        color: #1E293B; /* dark */
+        font-family: sans-serif;
       }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
+      /* Custom input style */
+      .input {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-shadow duration-200;
+      }
+      /* Animation */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
       }
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
       .animate-fadeIn {
-        animation: fadeIn 0.6s ease-in-out forwards;
+        animation: fadeIn 0.5s ease-out forwards;
       }
-      .animate-slideUp {
-        opacity: 0; /* Start hidden */
-        animation: slideUp 0.6s ease-in-out forwards;
-      }
-      .input {
-        @apply block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all duration-200;
+       .animate-slideUp {
+        animation: slideUp 0.3s ease-out forwards;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
-    "jspdf": "https://aistudiocdn.com/jspdf@^3.0.3",
-    "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1",
-    "marked": "https://aistudiocdn.com/marked@^16.4.1"
-  }
-}
-</script>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "jspdf": "https://aistudiocdn.com/jspdf@^3.0.3",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1",
+        "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+        "marked": "https://aistudiocdn.com/marked@^16.4.1"
+      }
+    }
+    </script>
 </head>
-  <body class="bg-white text-dark">
+<body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-  </body>
+</body>
 </html>

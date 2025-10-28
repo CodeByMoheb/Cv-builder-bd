@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export interface PersonalInfo {
@@ -97,6 +98,8 @@ export interface SavedResume {
 export interface User {
     id: string;
     email: string;
+    // FIX: Add optional password for mock DB authentication logic.
+    password?: string;
     // Password is not sent to the frontend
     role: 'user' | 'admin';
     name?: string;

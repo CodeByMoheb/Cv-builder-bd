@@ -1,10 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-// FIX: Imported the correct PageState interface instead of the non-existent Page.
 import { PageState } from '../App';
 
 interface LoginPageProps {
-  // FIX: Updated the onNavigate prop to use the correct PageState type.
   onNavigate: (page: PageState) => void;
 }
 
@@ -19,13 +17,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const user = await login(email, password);
-    setLoading(false);
-    if (user) {
-      // FIX: Correctly passed a PageState object to the onNavigate function.
-      onNavigate({ name: user.role === 'admin' ? 'admin' : 'dashboard' });
-    } else {
-      setError('Invalid email or password. Please try again.');
+    try {
+      const user = await login(email, password);
+      if (user) {
+        onNavigate({ name: 'dashboard' });
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,9 +38,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            {/* FIX: Correctly passed a PageState object to the onNavigate function. */}
             <a onClick={() => onNavigate({ name: 'register' })} className="font-medium text-primary hover:text-primary/80 cursor-pointer">
-              create a new account
+              start your 14-day free trial
             </a>
           </p>
         </div>
@@ -55,25 +54,33 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                 type="email"
                 autoComplete="email"
                 required
-                className="input rounded-t-md"
+                className="input rounded-b-none"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password-2" className="sr-only">Password</label>
+              <label htmlFor="password" className="sr-only">Password</label>
               <input
-                id="password-2"
+                id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                className="input rounded-b-md"
+                className="input rounded-t-none"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <a onClick={() => onNavigate({ name: 'forgot-password' })} className="font-medium text-primary hover:text-primary/80 cursor-pointer">
+                Forgot your password?
+              </a>
             </div>
           </div>
 

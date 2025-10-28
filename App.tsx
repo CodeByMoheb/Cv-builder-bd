@@ -1,6 +1,8 @@
 
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { Template, ResumeData, SavedResume } from './types';
+import { TEMPLATE_CATEGORIES, INITIAL_RESUME_DATA, TEMPLATES_MAP } from './constants';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import TemplatesPage from './pages/TemplatesPage';
@@ -8,26 +10,26 @@ import EditorView from './components/EditorView';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import BlogPage from './pages/BlogPage';
 import BlogDetailPage from './pages/BlogDetailPage';
 import ContactPage from './pages/ContactPage';
 import AdminLayout from './pages/admin/AdminLayout';
-
-import { ResumeData, Template, SavedResume } from './types';
-import { INITIAL_RESUME_DATA, TEMPLATES_MAP } from './constants';
-import * as api from './services/api';
-
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import * as api from './services/api';
 
 export type PageState =
   | { name: 'home' }
   | { name: 'templates' }
-  | { name: 'editor'; params: { template: Template } }
+  | { name: 'editor'; params: { templateId: string; cvId?: string | null } }
   | { name: 'dashboard' }
   | { name: 'login' }
   | { name: 'register' }
+  | { name: 'forgot-password' }
+  | { name: 'reset-password'; params: { token: string } }
   | { name: 'profile' }
   | { name: 'blog' }
   | { name: 'blogDetail'; params: { slug: string } }
@@ -35,123 +37,93 @@ export type PageState =
   | { name: 'admin'; params?: { section?: string } };
 
 const AppContent: React.FC = () => {
-  const { user, loading } = useContext(AuthContext);
   const [currentPage, setCurrentPage] = useState<PageState>({ name: 'home' });
   const [resumeData, setResumeData] = useState<ResumeData>(INITIAL_RESUME_DATA);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [currentCvId, setCurrentCvId] = useState<string | null>(null);
+  const { user, loading } = useContext(AuthContext);
 
-  // State for PDF generation
-  const printRef = useRef<HTMLDivElement>(null);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [pdfTemplate, setPdfTemplate] = useState<Template | null>(null);
-  const [pdfResumeData, setPdfResumeData] = useState<ResumeData | null>(null);
-
-  useEffect(() => {
-    // Redirect logic
-    if (!loading && !user) {
-      if (['dashboard', 'profile', 'admin'].includes(currentPage.name)) {
-        setCurrentPage({ name: 'login' });
-      }
+  const handleNavigate = useCallback((page: PageState) => {
+    // Prevent non-admins from accessing admin pages
+    if (page.name === 'admin' && user?.role !== 'admin') {
+      setCurrentPage({ name: 'home' });
+      return;
     }
-  }, [user, loading, currentPage]);
-
-  const handleNavigate = (page: PageState) => {
-    window.scrollTo(0, 0);
     setCurrentPage(page);
-  };
+    window.scrollTo(0, 0);
+  }, [user]);
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
     setResumeData(INITIAL_RESUME_DATA);
     setCurrentCvId(null);
-    handleNavigate({ name: 'editor', params: { template } });
+    handleNavigate({ name: 'editor', params: { templateId: template.id } });
   };
-
-  const handleCreateNew = () => {
-    handleNavigate({ name: 'templates' });
-  };
-
-  const handleEdit = async (id: string) => {
-    const cvToEdit = await api.getResume(id);
-    if (cvToEdit) {
-      const template = TEMPLATES_MAP[cvToEdit.templateId];
-      if (template) {
-        setResumeData(cvToEdit.resumeData);
-        setSelectedTemplate(template);
-        setCurrentCvId(cvToEdit.id);
-        handleNavigate({ name: 'editor', params: { template } });
-      }
+  
+  const handleEditResume = async (cvId: string) => {
+    try {
+        const resumeToEdit = await api.getResumeById(cvId);
+        if (resumeToEdit) {
+            const template = TEMPLATES_MAP[resumeToEdit.templateId];
+            if (template) {
+                setSelectedTemplate(template);
+                setResumeData(resumeToEdit.resumeData);
+                setCurrentCvId(resumeToEdit.id);
+                handleNavigate({ name: 'editor', params: { templateId: template.id, cvId: resumeToEdit.id }});
+            } else {
+                alert("Template for this resume could not be found.");
+            }
+        }
+    } catch (error) {
+        console.error("Failed to load resume for editing:", error);
+        alert("Could not load the selected resume.");
     }
   };
   
-  const handleSave = async (name: string): Promise<void> => {
+  const handleSaveResume = async (name: string): Promise<void> => {
     if (!selectedTemplate) throw new Error("No template selected");
-    
-    const dataToSave: Omit<SavedResume, 'id' | 'userId' | 'lastModified'> = {
-      name: name,
-      resumeData: resumeData,
-      templateId: selectedTemplate.id,
+
+    const resumeToSave: Omit<SavedResume, 'id' | 'userId' | 'lastModified'> = {
+        name,
+        resumeData,
+        templateId: selectedTemplate.id,
     };
-
+    
     if (currentCvId) {
-      const updatedCv = await api.updateResume(currentCvId, dataToSave);
-      setCurrentCvId(updatedCv.id); // Ensure ID is set
+        const updatedCv = await api.updateResume(currentCvId, resumeToSave);
+        setCurrentCvId(updatedCv.id);
     } else {
-      const newCv = await api.saveResume(dataToSave);
-      setCurrentCvId(newCv.id);
-    }
-  };
-
-  const handleDownload = async (id?: string) => {
-    let cvData: SavedResume | null = null;
-
-    if (id) { // From dashboard
-        cvData = await api.getResume(id);
-    } else if(currentCvId) { // From editor after saving
-        cvData = await api.getResume(currentCvId);
-    }
-
-    if (cvData) {
-        const template = TEMPLATES_MAP[cvData.templateId];
-        if (template) {
-            await generatePdf(template, cvData.resumeData);
-        }
-    } else if (selectedTemplate) { // From editor without saving
-        await generatePdf(selectedTemplate, resumeData);
+        const newCv = await api.createResume(resumeToSave);
+        setCurrentCvId(newCv.id);
     }
   };
   
-  const generatePdf = async (template: Template, data: ResumeData) => {
-    setIsGeneratingPdf(true);
-    setPdfTemplate(template);
-    setPdfResumeData(data);
-
-    // Allow time for the offscreen component to render with the correct data
-    setTimeout(async () => {
-        const element = printRef.current;
-        if (!element) {
-            setIsGeneratingPdf(false);
-            return;
-        }
-
-        const canvas = await html2canvas(element, { scale: 3 });
+  const handleGeneratePdf = () => {
+    const previewElement = document.getElementById('resume-preview-content');
+    if (!previewElement) {
+        alert("Could not find resume content to generate PDF.");
+        return;
+    }
+    
+    html2canvas(previewElement, {
+        scale: 4, // Higher scale for better quality
+        useCORS: true,
+        logging: true,
+    }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
-
         const pdf = new jsPDF('p', 'pt', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+        const imgWidth = canvasWidth * ratio;
+        const imgHeight = canvasHeight * ratio;
         
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`${data.personalInfo.name}_Resume.pdf`);
-
-        // Cleanup
-        setPdfTemplate(null);
-        setPdfResumeData(null);
-        setIsGeneratingPdf(false);
-    }, 500);
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`${resumeData.personalInfo.name}_Resume.pdf`);
+    });
   };
-
 
   const renderPage = () => {
     switch (currentPage.name) {
@@ -160,23 +132,30 @@ const AppContent: React.FC = () => {
       case 'templates':
         return <TemplatesPage onSelectTemplate={handleSelectTemplate} />;
       case 'editor':
-        return (
-          <EditorView
-            template={selectedTemplate!}
-            resumeData={resumeData}
-            setResumeData={setResumeData}
-            onBack={() => handleNavigate({ name: user ? 'dashboard' : 'templates' })}
-            onSave={handleSave}
-            currentCvId={currentCvId}
-            onGeneratePdf={() => handleDownload()}
-          />
-        );
+        if (selectedTemplate) {
+          return <EditorView 
+                    template={selectedTemplate} 
+                    resumeData={resumeData}
+                    setResumeData={setResumeData}
+                    onBack={() => handleNavigate({ name: 'dashboard' })}
+                    onSave={handleSaveResume}
+                    currentCvId={currentCvId}
+                    onGeneratePdf={handleGeneratePdf}
+                 />;
+        }
+        // Fallback if editor is accessed directly without a template
+        handleNavigate({ name: 'templates' }); 
+        return null;
       case 'dashboard':
-        return <DashboardPage onEdit={handleEdit} onDownload={handleDownload} onCreateNew={handleCreateNew} />;
+        return <DashboardPage onEdit={handleEditResume} onDownload={handleEditResume} onCreateNew={() => handleNavigate({ name: 'templates' })} />;
       case 'login':
         return <LoginPage onNavigate={handleNavigate} />;
       case 'register':
         return <RegisterPage onNavigate={handleNavigate} />;
+      case 'forgot-password':
+        return <ForgotPasswordPage onNavigate={handleNavigate} />;
+      case 'reset-password':
+        return <ResetPasswordPage onNavigate={handleNavigate} token={currentPage.params.token} />;
       case 'profile':
         return <ProfilePage />;
       case 'blog':
@@ -192,26 +171,29 @@ const AppContent: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    // Handle deep linking for password reset
+    const hash = window.location.hash.slice(1);
+    if (hash.startsWith('reset-password?')) {
+      const params = new URLSearchParams(hash.split('?')[1]);
+      const token = params.get('token');
+      if (token) {
+        setCurrentPage({ name: 'reset-password', params: { token } });
+        // Clean the hash to prevent re-triggering
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+
+    if (!loading && !user && (currentPage.name === 'dashboard' || currentPage.name === 'profile' || currentPage.name === 'editor' || currentPage.name === 'admin')) {
+      handleNavigate({ name: 'login' });
+    }
+  }, [user, loading, handleNavigate]);
+  
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading Application...</div>;
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  return (
-    <>
-        <Layout currentPage={currentPage} onNavigate={handleNavigate}>
-            {renderPage()}
-        </Layout>
-        
-        {/* Off-screen container for PDF generation */}
-        {isGeneratingPdf && pdfTemplate && pdfResumeData && (
-          <div style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -10 }}>
-            <div ref={printRef} style={{ width: '595pt', height: '842pt', backgroundColor: 'white' }}>
-                <pdfTemplate.component resumeData={pdfResumeData} />
-            </div>
-          </div>
-        )}
-    </>
-  );
+  return <Layout currentPage={currentPage} onNavigate={handleNavigate}>{renderPage()}</Layout>;
 };
 
 const App: React.FC = () => (

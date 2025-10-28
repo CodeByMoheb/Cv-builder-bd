@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = localStorage.getItem('authToken');
     if (token) {
       try {
-        const currentUser = await api.getSelf(token);
+        const currentUser = await api.getSelf();
         setUser(currentUser);
       } catch (error) {
         console.error("Token validation failed", error);
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return loggedInUser;
     } catch (error) {
       console.error(error);
-      return null;
+      throw error;
     }
   };
 

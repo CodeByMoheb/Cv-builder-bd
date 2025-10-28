@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -10,29 +11,20 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) => {
-  const isFullWidthPage = currentPage.name === 'editor' || currentPage.name === 'admin';
-  const nonContainedPages = ['home'];
+  const isAdminPage = currentPage.name === 'admin';
 
-  const useContainer = !isFullWidthPage && !nonContainedPages.includes(currentPage.name);
-
-  // Do not render Footer on admin pages
-  const showFooter = currentPage.name !== 'admin';
+  // The AdminLayout provides its own structure, so we don't need the standard Navbar/Footer.
+  if (isAdminPage) {
+    return <>{children}</>;
+  }
 
   return (
-    <div className="min-h-screen bg-white font-sans flex flex-col">
+    <div className="flex flex-col min-h-screen bg-secondary">
       <Navbar currentPage={currentPage} onNavigate={onNavigate} />
-      <main className="flex-grow">
-        {isFullWidthPage ? (
-          <div>{children}</div>
-        ) : useContainer ? (
-          <div className="max-w-7xl mx-auto p-4 md:p-8">
-            {children}
-          </div>
-        ) : (
-          children
-        )}
+      <main className="flex-grow container mx-auto px-4 md:px-8 py-8">
+        {children}
       </main>
-      {showFooter && <Footer />}
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 };
