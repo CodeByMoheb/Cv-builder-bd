@@ -1,9 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Page } from '../App';
+// FIX: Imported the correct PageState interface instead of the non-existent Page.
+import { PageState } from '../App';
 
 interface LoginPageProps {
-  onNavigate: (page: Page) => void;
+  // FIX: Updated the onNavigate prop to use the correct PageState type.
+  onNavigate: (page: PageState) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
@@ -20,7 +22,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const user = await login(email, password);
     setLoading(false);
     if (user) {
-      onNavigate(user.role === 'admin' ? 'admin' : 'dashboard');
+      // FIX: Correctly passed a PageState object to the onNavigate function.
+      onNavigate({ name: user.role === 'admin' ? 'admin' : 'dashboard' });
     } else {
       setError('Invalid email or password. Please try again.');
     }
@@ -35,7 +38,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <a onClick={() => onNavigate('register')} className="font-medium text-primary hover:text-primary/80 cursor-pointer">
+            {/* FIX: Correctly passed a PageState object to the onNavigate function. */}
+            <a onClick={() => onNavigate({ name: 'register' })} className="font-medium text-primary hover:text-primary/80 cursor-pointer">
               create a new account
             </a>
           </p>

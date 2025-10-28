@@ -1,286 +1,379 @@
-// services/api.ts
 
 import { v4 as uuidv4 } from 'uuid';
-import { User, SavedResume, ResumeData } from '../types';
+import {
+  AdminStats,
+  BlogPost,
+  Payment,
+  ResumeData,
+  SavedResume,
+  Template,
+  User,
+} from '../types';
+import { INITIAL_RESUME_DATA, TEMPLATE_CATEGORIES } from '../constants';
 
-// --- In-memory database with localStorage persistence ---
+// --- MOCK DATABASE (using localStorage) ---
 
-let db: {
-  users: User[];
-  resumes: SavedResume[];
-} = {
-  users: [],
-  resumes: [],
+const DB_KEYS = {
+  users: 'cv-builder-users',
+  resumes: 'cv-builder-resumes',
+  blogPosts: 'cv-builder-blog-posts',
+  payments: 'cv-builder-payments',
+  templates: 'cv-builder-templates-meta',
 };
 
-const saveDb = () => {
-  try {
-    localStorage.setItem('cvbuilder_db', JSON.stringify(db));
-  } catch (e) {
-    console.error("Failed to save to localStorage", e);
-  }
+const MOCK_DELAY = 500;
+
+const db = {
+  get: <T>(key: string, defaultValue: T): T => {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : defaultValue;
+  },
+  set: <T>(key: string, value: T): void => {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
 };
 
 const initDb = () => {
-  try {
-    const storedDb = localStorage.getItem('cvbuilder_db');
-    if (storedDb) {
-      db = JSON.parse(storedDb);
-    } else {
-      // Seed with a default admin user if no DB exists
-      const adminUser: User = {
+  if (!localStorage.getItem(DB_KEYS.users)) {
+    db.set<User[]>(DB_KEYS.users, [
+      { id: 'admin-user', email: 'admin@cv.com', password: 'adminpassword', role: 'admin', name: 'Admin User' },
+      { id: 'test-user', email: 'user@cv.com', password: 'userpassword', role: 'user', name: 'Test User' },
+    ]);
+  }
+  if (!localStorage.getItem(DB_KEYS.resumes)) {
+    const userId = 'test-user';
+    db.set<SavedResume[]>(DB_KEYS.resumes, [
+      {
         id: uuidv4(),
-        email: 'admin@cvbd.com',
-        name: 'Admin User',
-        password: 'password123', // In a real app, this would be a hash
-        role: 'admin',
-      };
-      db.users.push(adminUser);
-      saveDb();
-    }
-  } catch (e) {
-    console.error("Failed to initialize DB from localStorage", e);
-    // If parsing fails, start fresh
-    db = { users: [], resumes: [] };
-    const adminUser: User = {
-        id: uuidv4(),
-        email: 'admin@cvbd.com',
-        name: 'Admin User',
-        password: 'password123',
-        role: 'admin',
-    };
-    db.users.push(adminUser);
-    saveDb();
+        userId,
+        name: 'My Software Engineer CV',
+        resumeData: INITIAL_RESUME_DATA,
+        templateId: 'modern',
+        lastModified: Date.now(),
+      },
+    ]);
+  }
+  if (!localStorage.getItem(DB_KEYS.blogPosts)) {
+    db.set<BlogPost[]>(DB_KEYS.blogPosts, [
+        {
+            id: '1',
+            slug: 'mastering-the-ats-friendly-resume',
+            title: 'Mastering the ATS-Friendly Resume in 2024',
+            excerpt: 'Learn how to beat the bots and get your resume into human hands with these essential tips and tricks.',
+            content: 'Full markdown content here...',
+            imageUrl: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80',
+            author: 'Jane Doe',
+            authorAvatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704a',
+            category: 'Resume Tips',
+            createdAt: new Date().toISOString(),
+        },
+        {
+            id: '2',
+            slug: 'top-10-in-demand-tech-skills',
+            title: 'Top 10 In-Demand Tech Skills for the Modern Job Market',
+            excerpt: 'Stay ahead of the curve. We break down the most sought-after tech skills employers are looking for right now.',
+            content: 'Full markdown content here...',
+            imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80',
+            author: 'John Smith',
+            authorAvatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704b',
+            category: 'Career Advice',
+            createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+        },
+    ]);
+  }
+   if (!localStorage.getItem(DB_KEYS.payments)) {
+    db.set<Payment[]>(DB_KEYS.payments, [
+        {
+            id: '1',
+            userId: 'test-user',
+            userEmail: 'user@cv.com',
+            amount: 10,
+            currency: 'BDT',
+            status: 'succeeded',
+            transactionId: 'TXN_' + uuidv4(),
+            createdAt: new Date().toISOString()
+        }
+    ]);
+  }
+  if (!localStorage.getItem(DB_KEYS.templates)) {
+     const templates = TEMPLATE_CATEGORIES.flatMap(c => c.templates.map(t => ({...t, component: undefined}))); // Remove component for storage
+     db.set<Template[]>(DB_KEYS.templates, templates);
   }
 };
 
 initDb();
 
-// --- Mock JWT utilities ---
-// In a real app, use a proper JWT library
+const simulate = <T>(data: T): Promise<T> =>
+  new Promise(resolve => setTimeout(() => resolve(data), MOCK_DELAY));
 
-const createToken = (user: User): string => btoa(JSON.stringify({ userId: user.id, role: user.role, iat: Date.now() }));
-const decodeToken = (token: string): { userId: string; role: 'user' | 'admin' } | null => {
-  try {
-    return JSON.parse(atob(token));
-  } catch {
-    return null;
-  }
+// --- Auth ---
+export const login = async (email: string, password: string): Promise<{ token: string; user: User }> => {
+  const users = db.get<User[]>(DB_KEYS.users, []);
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) throw new Error("Invalid credentials");
+  const token = `mock-token-for-${user.id}`;
+  const userWithoutPassword = { ...user };
+  delete userWithoutPassword.password;
+  return simulate({ token, user: userWithoutPassword });
 };
-const getCurrentUser = (): User | undefined => {
+
+export const register = async (email: string, password: string): Promise<{ token: string; user: User }> => {
+  const users = db.get<User[]>(DB_KEYS.users, []);
+  if (users.some(u => u.email === email)) throw new Error("User already exists");
+  const newUser: User = { id: uuidv4(), email, password, role: 'user', name: email.split('@')[0] };
+  users.push(newUser);
+  db.set(DB_KEYS.users, users);
+  return login(email, password);
+};
+
+export const getSelf = async (token: string): Promise<User> => {
+  const userId = token.replace('mock-token-for-', '');
+  const users = db.get<User[]>(DB_KEYS.users, []);
+  const user = users.find(u => u.id === userId);
+  if (!user) throw new Error("Invalid token");
+  const userWithoutPassword = { ...user };
+  delete userWithoutPassword.password;
+  return simulate(userWithoutPassword);
+};
+
+// This would be a private helper in a real app
+const getCurrentUserId = () => {
     const token = localStorage.getItem('authToken');
-    if (!token) return undefined;
-    const decoded = decodeToken(token);
-    if (!decoded) return undefined;
-    return db.users.find(u => u.id === decoded.userId);
+    if (!token) throw new Error("Not authenticated");
+    return token.replace('mock-token-for-', '');
+};
+
+
+// --- User Profile ---
+export const updateUserProfile = async (data: { name?: string; photo?: string }): Promise<User> => {
+    const userId = getCurrentUserId();
+    const users = db.get<User[]>(DB_KEYS.users, []);
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) throw new Error("User not found");
+    
+    users[userIndex] = { ...users[userIndex], ...data };
+    db.set(DB_KEYS.users, users);
+    
+    const userWithoutPassword = { ...users[userIndex] };
+    delete userWithoutPassword.password;
+    return simulate(userWithoutPassword);
+};
+
+export const changePassword = async (data: { oldPassword; newPassword }): Promise<void> => {
+    const userId = getCurrentUserId();
+    const users = db.get<User[]>(DB_KEYS.users, []);
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) throw new Error("User not found");
+    if (users[userIndex].password !== data.oldPassword) throw new Error("Incorrect current password");
+    
+    users[userIndex].password = data.newPassword;
+    db.set(DB_KEYS.users, users);
+    
+    return simulate(undefined);
+};
+
+// --- Resumes ---
+export const getResumes = async (): Promise<SavedResume[]> => {
+  const userId = getCurrentUserId();
+  const allResumes = db.get<SavedResume[]>(DB_KEYS.resumes, []);
+  return simulate(allResumes.filter(r => r.userId === userId));
+};
+
+export const getResume = async (id: string): Promise<SavedResume | null> => {
+  const userId = getCurrentUserId();
+  const allResumes = db.get<SavedResume[]>(DB_KEYS.resumes, []);
+  const resume = allResumes.find(r => r.id === id && r.userId === userId);
+  return simulate(resume || null);
+};
+
+export const saveResume = async (data: Omit<SavedResume, 'id' | 'userId' | 'lastModified'>): Promise<SavedResume> => {
+    const userId = getCurrentUserId();
+    const allResumes = db.get<SavedResume[]>(DB_KEYS.resumes, []);
+    const newResume: SavedResume = {
+        ...data,
+        id: uuidv4(),
+        userId,
+        lastModified: Date.now()
+    };
+    allResumes.push(newResume);
+    db.set(DB_KEYS.resumes, allResumes);
+    return simulate(newResume);
+};
+
+export const updateResume = async (id: string, data: Partial<Omit<SavedResume, 'id' | 'userId'>>): Promise<SavedResume> => {
+    const userId = getCurrentUserId();
+    const allResumes = db.get<SavedResume[]>(DB_KEYS.resumes, []);
+    const resumeIndex = allResumes.findIndex(r => r.id === id && r.userId === userId);
+    if (resumeIndex === -1) throw new Error("Resume not found");
+    allResumes[resumeIndex] = { ...allResumes[resumeIndex], ...data, lastModified: Date.now() };
+    db.set(DB_KEYS.resumes, allResumes);
+    return simulate(allResumes[resumeIndex]);
+};
+
+export const deleteResume = async (id: string): Promise<void> => {
+    const userId = getCurrentUserId();
+    let allResumes = db.get<SavedResume[]>(DB_KEYS.resumes, []);
+    allResumes = allResumes.filter(r => !(r.id === id && r.userId === userId));
+    db.set(DB_KEYS.resumes, allResumes);
+    return simulate(undefined);
+};
+
+export const duplicateResume = async (id: string): Promise<SavedResume> => {
+    const original = await getResume(id);
+    if (!original) throw new Error("Original resume not found");
+    const newResumeData = {
+        ...original,
+        name: `Copy of ${original.name}`,
+    };
+    delete (newResumeData as any).id;
+    return saveResume(newResumeData);
+};
+
+
+// --- Blog & Contact ---
+export const getBlogPosts = async (): Promise<BlogPost[]> => {
+  return simulate(db.get<BlogPost[]>(DB_KEYS.blogPosts, []));
+};
+
+export const getBlogPostBySlug = async (slug: string): Promise<BlogPost> => {
+  const posts = db.get<BlogPost[]>(DB_KEYS.blogPosts, []);
+  const post = posts.find(p => p.slug === slug);
+  if (!post) throw new Error("Post not found");
+  return simulate(post);
+};
+
+export const submitContactForm = async (data: { name: string, email: string, message: string }): Promise<void> => {
+    console.log("Contact form submitted (mock):", data);
+    return simulate(undefined);
+};
+
+
+// --- ADMIN ---
+
+export const getDashboardStats = async (): Promise<AdminStats> => {
+    const users = db.get<User[]>(DB_KEYS.users, []);
+    const resumes = db.get<SavedResume[]>(DB_KEYS.resumes, []);
+    const blogPosts = db.get<BlogPost[]>(DB_KEYS.blogPosts, []);
+    const payments = db.get<Payment[]>(DB_KEYS.payments, []);
+
+    return simulate({
+        totalUsers: users.length,
+        totalResumes: resumes.length,
+        totalBlogPosts: blogPosts.length,
+        totalPayments: payments.length,
+        totalRevenue: payments.reduce((sum, p) => sum + p.amount, 0),
+    });
+};
+
+export const adminGetAllUsers = async (): Promise<User[]> => {
+    const users = db.get<User[]>(DB_KEYS.users, []);
+    return simulate(users.map(u => {
+        const userWithoutPassword = { ...u };
+        delete userWithoutPassword.password;
+        return userWithoutPassword;
+    }));
+};
+
+export const adminUpdateUser = async (id: string, data: Partial<User>): Promise<User> => {
+    const users = db.get<User[]>(DB_KEYS.users, []);
+    const userIndex = users.findIndex(u => u.id === id);
+    if (userIndex === -1) throw new Error("User not found");
+    users[userIndex] = { ...users[userIndex], ...data };
+    db.set(DB_KEYS.users, users);
+    const userWithoutPassword = { ...users[userIndex] };
+    delete userWithoutPassword.password;
+    return simulate(userWithoutPassword);
+};
+
+export const adminDeleteUser = async (id: string): Promise<void> => {
+    let users = db.get<User[]>(DB_KEYS.users, []);
+    users = users.filter(u => u.id !== id);
+    db.set(DB_KEYS.users, users);
+    return simulate(undefined);
+};
+
+export const adminGetTemplates = async(): Promise<Template[]> => {
+    return simulate(db.get<Template[]>(DB_KEYS.templates, []));
 }
 
-
-// --- API Functions ---
-
-export const login = (email: string, password: string): Promise<{ token: string; user: User }> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const user = db.users.find(u => u.email === email && u.password === password);
-      if (user) {
-        const token = createToken(user);
-        resolve({ token, user });
-      } else {
-        reject(new Error("Invalid credentials"));
-      }
-    }, 500);
-  });
+export const adminCreateTemplate = async(formData: FormData): Promise<Template> => {
+    // This is a simplified mock. A real implementation would handle file uploads.
+    const newTemplate: Template = {
+        id: uuidv4(),
+        name: formData.get('name') as string,
+        type: formData.get('type') as 'react' | 'latex',
+        hasPhoto: formData.get('hasPhoto') === 'true',
+        category: formData.get('category') as string,
+        previewImageUrl: 'https://via.placeholder.com/300x424.png?text=New+Template'
+    };
+    const templates = db.get<Template[]>(DB_KEYS.templates, []);
+    templates.push(newTemplate);
+    db.set(DB_KEYS.templates, templates);
+    return simulate(newTemplate);
 };
 
-export const register = (email: string, password: string): Promise<{ token: string; user: User }> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (db.users.some(u => u.email === email)) {
-        reject(new Error("User with this email already exists"));
-        return;
-      }
-      const newUser: User = { id: uuidv4(), email, password, role: 'user', name: email.split('@')[0] };
-      db.users.push(newUser);
-      saveDb();
-      const token = createToken(newUser);
-      resolve({ token, user: newUser });
-    }, 500);
-  });
+export const adminUpdateTemplate = async(id: string, formData: FormData): Promise<Template> => {
+    const templates = db.get<Template[]>(DB_KEYS.templates, []);
+    const index = templates.findIndex(t => t.id === id);
+    if (index === -1) throw new Error("Template not found");
+    templates[index] = {
+        ...templates[index],
+        name: formData.get('name') as string,
+        type: formData.get('type') as 'react' | 'latex',
+        hasPhoto: formData.get('hasPhoto') === 'true',
+        category: formData.get('category') as string,
+    };
+    db.set(DB_KEYS.templates, templates);
+    return simulate(templates[index]);
 };
 
-export const getSelf = (token: string): Promise<User> => {
-    return new Promise((resolve, reject) => {
-        const decoded = decodeToken(token);
-        if (!decoded) return reject(new Error("Invalid token"));
-        const user = db.users.find(u => u.id === decoded.userId);
-        if (user) {
-            resolve(user);
-        } else {
-            reject(new Error("User not found"));
-        }
-    });
+export const adminDeleteTemplate = async(id: string): Promise<void> => {
+    let templates = db.get<Template[]>(DB_KEYS.templates, []);
+    templates = templates.filter(t => t.id !== id);
+    db.set(DB_KEYS.templates, templates);
+    return simulate(undefined);
 };
 
-export const updateUserProfile = (data: { name?: string; photo?: string }): Promise<User> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
 
-        if (data.name !== undefined && data.name.trim() === '') {
-            return reject(new Error("Name cannot be empty."));
-        }
-        
-        const userIndex = db.users.findIndex(u => u.id === currentUser.id);
-        if (userIndex === -1) return reject(new Error("User not found"));
-        
-        const updatedUser = { ...db.users[userIndex], ...data };
-        db.users[userIndex] = updatedUser;
-        saveDb();
-        resolve(updatedUser);
-    });
+export const adminGetBlogPosts = async (): Promise<BlogPost[]> => {
+    return simulate(db.get<BlogPost[]>(DB_KEYS.blogPosts, []));
 };
 
-export const changePassword = (data: { oldPassword: string; newPassword: string }): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-
-        const userIndex = db.users.findIndex(u => u.id === currentUser.id);
-        if (userIndex === -1) return reject(new Error("User not found"));
-
-        if (db.users[userIndex].password !== data.oldPassword) {
-            return reject(new Error("Incorrect old password"));
-        }
-        
-        if (!data.newPassword || data.newPassword.length < 6) {
-            return reject(new Error("New password must be at least 6 characters long."));
-        }
-        if (data.newPassword === data.oldPassword) {
-            return reject(new Error("New password cannot be the same as the old password."));
-        }
-        
-        db.users[userIndex].password = data.newPassword;
-        saveDb();
-        resolve();
-    });
+export const adminCreateBlogPost = async (data: Partial<BlogPost>): Promise<BlogPost> => {
+    const posts = db.get<BlogPost[]>(DB_KEYS.blogPosts, []);
+    const newPost: BlogPost = {
+        id: uuidv4(),
+        slug: data.slug || 'new-post',
+        title: data.title || 'New Post',
+        excerpt: data.excerpt || '',
+        content: data.content || '',
+        imageUrl: data.imageUrl || 'https://via.placeholder.com/400x200',
+        author: data.author || 'Admin',
+        authorAvatar: data.authorAvatar || 'https://i.pravatar.cc/150',
+        category: data.category || 'General',
+        createdAt: new Date().toISOString(),
+    };
+    posts.push(newPost);
+    db.set(DB_KEYS.blogPosts, posts);
+    return simulate(newPost);
 };
 
-export const createResume = (data: { name: string; resumeData: ResumeData; templateId: string }): Promise<SavedResume> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-        
-        const newResume: SavedResume = {
-            id: uuidv4(),
-            userId: currentUser.id,
-            name: data.name,
-            resumeData: data.resumeData,
-            templateId: data.templateId,
-            lastModified: Date.now(),
-        };
-        db.resumes.push(newResume);
-        saveDb();
-        resolve(newResume);
-    });
+export const adminUpdateBlogPost = async (id: string, data: Partial<BlogPost>): Promise<BlogPost> => {
+    const posts = db.get<BlogPost[]>(DB_KEYS.blogPosts, []);
+    const index = posts.findIndex(p => p.id === id);
+    if (index === -1) throw new Error("Post not found");
+    posts[index] = { ...posts[index], ...data, updatedAt: new Date().toISOString() };
+    db.set(DB_KEYS.blogPosts, posts);
+    return simulate(posts[index]);
 };
 
-export const getResumes = (): Promise<SavedResume[]> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-        
-        const userResumes = db.resumes.filter(r => r.userId === currentUser.id);
-        resolve(userResumes);
-    });
+export const adminDeleteBlogPost = async (id: string): Promise<void> => {
+    let posts = db.get<BlogPost[]>(DB_KEYS.blogPosts, []);
+    posts = posts.filter(p => p.id !== id);
+    db.set(DB_KEYS.blogPosts, posts);
+    return simulate(undefined);
 };
 
-export const getResumeById = (id: string): Promise<SavedResume | null> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-
-        const resume = db.resumes.find(r => r.id === id);
-        if (!resume) return resolve(null);
-        
-        if (resume.userId !== currentUser.id && currentUser.role !== 'admin') {
-            return reject(new Error("Access denied"));
-        }
-        resolve(resume);
-    });
-};
-
-export const updateResume = (id: string, data: { name: string; resumeData: ResumeData }): Promise<SavedResume> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-
-        const resumeIndex = db.resumes.findIndex(r => r.id === id);
-        if (resumeIndex === -1) return reject(new Error("Resume not found"));
-
-        if (db.resumes[resumeIndex].userId !== currentUser.id && currentUser.role !== 'admin') {
-            return reject(new Error("Access denied"));
-        }
-
-        const updatedResume = {
-            ...db.resumes[resumeIndex],
-            name: data.name,
-            resumeData: data.resumeData,
-            lastModified: Date.now(),
-        };
-        db.resumes[resumeIndex] = updatedResume;
-        saveDb();
-        resolve(updatedResume);
-    });
-};
-
-export const deleteResume = (id: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-        
-        const resumeIndex = db.resumes.findIndex(r => r.id === id);
-        if (resumeIndex === -1) return resolve(); // Silently fail if not found
-        
-        if (db.resumes[resumeIndex].userId !== currentUser.id && currentUser.role !== 'admin') {
-            return reject(new Error("Access denied"));
-        }
-
-        db.resumes = db.resumes.filter(r => r.id !== id);
-        saveDb();
-        resolve();
-    });
-};
-
-export const duplicateResume = (id: string): Promise<SavedResume> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) return reject(new Error("Not authenticated"));
-        
-        const originalResume = db.resumes.find(r => r.id === id);
-        if (!originalResume) return reject(new Error("Resume not found"));
-
-        if (originalResume.userId !== currentUser.id && currentUser.role !== 'admin') {
-            return reject(new Error("Access denied"));
-        }
-
-        const newResume: SavedResume = {
-            ...JSON.parse(JSON.stringify(originalResume)), // Deep copy
-            id: uuidv4(),
-            name: `${originalResume.name} (Copy)`,
-            lastModified: Date.now(),
-        };
-        db.resumes.push(newResume);
-        saveDb();
-        resolve(newResume);
-    });
-};
-
-export const getAllUsers = (): Promise<User[]> => {
-    return new Promise((resolve, reject) => {
-        const currentUser = getCurrentUser();
-        if (!currentUser || currentUser.role !== 'admin') {
-            return reject(new Error("Admin access required"));
-        }
-        resolve(db.users);
-    });
+export const adminGetPayments = async (): Promise<Payment[]> => {
+    return simulate(db.get<Payment[]>(DB_KEYS.payments, []));
 };

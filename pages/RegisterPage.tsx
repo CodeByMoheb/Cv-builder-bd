@@ -1,9 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Page } from '../App';
+// FIX: Imported the correct PageState interface instead of the non-existent Page.
+import { PageState } from '../App';
 
 interface RegisterPageProps {
-  onNavigate: (page: Page) => void;
+  // FIX: Updated the onNavigate prop to use the correct PageState type.
+  onNavigate: (page: PageState) => void;
 }
 
 const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
@@ -23,12 +25,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     setError('');
     setLoading(true);
     try {
-      const newUser = await register(email, password);
-      if (newUser) {
-        onNavigate('dashboard');
-      } else {
-        throw new Error("Registration failed. This email may already be in use.");
-      }
+      await register(email, password);
+      // FIX: Correctly passed a PageState object to the onNavigate function.
+      onNavigate({ name: 'dashboard' });
     } catch (err: any) {
        setError(err.message || 'An unexpected error occurred.');
     } finally {
@@ -45,7 +44,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <a onClick={() => onNavigate('login')} className="font-medium text-primary hover:text-primary/80 cursor-pointer">
+            {/* FIX: Correctly passed a PageState object to the onNavigate function. */}
+            <a onClick={() => onNavigate({ name: 'login' })} className="font-medium text-primary hover:text-primary/80 cursor-pointer">
               Sign in
             </a>
           </p>

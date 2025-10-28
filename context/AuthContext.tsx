@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User | null>;
   logout: () => void;
   register: (email: string, password: string) => Promise<User | null>;
+  updateUser: (updatedUser: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ export const AuthContext = createContext<AuthContextType>({
   login: async () => null,
   logout: () => {},
   register: async () => null,
+  updateUser: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -60,8 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(newUser);
       return newUser;
     } catch (error) {
-      console.error(error);
-      return null;
+      console.error("Registration error in AuthContext:", error);
+      throw error; // Re-throw the original error from the API
     }
   };
 
@@ -69,9 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('authToken');
     setUser(null);
   };
+  
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

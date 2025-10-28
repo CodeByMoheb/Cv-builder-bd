@@ -1,19 +1,22 @@
 import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import { Page } from '../App';
+import { PageState } from '../App';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentPage: Page;
-  onNavigate: (page: Page) => void;
+  currentPage: PageState;
+  onNavigate: (page: PageState) => void;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) => {
-  const isFullWidthPage = currentPage === 'editor';
+  const isFullWidthPage = currentPage.name === 'editor' || currentPage.name === 'admin';
   const nonContainedPages = ['home'];
 
-  const useContainer = !isFullWidthPage && !nonContainedPages.includes(currentPage);
+  const useContainer = !isFullWidthPage && !nonContainedPages.includes(currentPage.name);
+
+  // Do not render Footer on admin pages
+  const showFooter = currentPage.name !== 'admin';
 
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
@@ -29,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) =>
           children
         )}
       </main>
-      <Footer />
+      {showFooter && <Footer />}
     </div>
   );
 };

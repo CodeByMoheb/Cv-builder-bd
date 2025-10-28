@@ -1,7 +1,5 @@
-// FIX: Import React to provide the React namespace for types like React.FC.
 import React from 'react';
 
-// FIX: Added type definitions to resolve module and type errors.
 export interface PersonalInfo {
   name: string;
   title:string;
@@ -73,8 +71,13 @@ export interface ResumeData {
 export interface Template {
   id: string;
   name: string;
-  component: React.FC<{ resumeData: ResumeData }>;
+  component?: React.FC<{ resumeData: ResumeData }>; // Optional for LaTeX templates
+  previewImageUrl?: string; // For all templates
   hasPhoto?: boolean;
+  type: 'react' | 'latex'; // Distinguish template type
+  latexFileContent?: string; // For LaTeX templates on backend
+  // FIX: Added optional category for admin management UI.
+  category?: string;
 }
 
 export interface TemplateCategory {
@@ -94,8 +97,42 @@ export interface SavedResume {
 export interface User {
     id: string;
     email: string;
-    password: string; // In a real app, this would be a hash
+    // Password is not sent to the frontend
     role: 'user' | 'admin';
     name?: string;
     photo?: string; // base64 data URL
+    createdAt?: string;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string; // Full markdown/html content
+  imageUrl: string;
+  author: string;
+  authorAvatar: string;
+  category: string;
+  createdAt: string; // ISO 8601 date string
+  updatedAt?: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalResumes: number;
+  totalBlogPosts: number;
+  totalPayments: number;
+  totalRevenue: number;
+}
+
+export interface Payment {
+  id: string;
+  userId: string;
+  userEmail: string;
+  amount: number;
+  currency: string;
+  status: 'succeeded' | 'pending' | 'failed';
+  transactionId: string;
+  createdAt: string;
 }
