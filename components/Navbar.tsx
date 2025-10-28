@@ -33,8 +33,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
             {user && user.role === 'admin' && (
               <a onClick={() => onNavigate('admin')} className={linkClasses('admin')}>Admin</a>
             )}
-            <a href="#" className="cursor-pointer px-3 py-2 rounded-md text-sm font-medium text-muted hover:text-dark">Blog</a>
-            <a href="#" className="cursor-pointer px-3 py-2 rounded-md text-sm font-medium text-muted hover:text-dark">Contact Us</a>
+            <a onClick={() => onNavigate('blog')} className={linkClasses('blog')}>Blog</a>
+            <a onClick={() => onNavigate('contact')} className={linkClasses('contact')}>Contact Us</a>
         </nav>
         <div className="flex items-center gap-2">
             {user ? (

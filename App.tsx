@@ -9,10 +9,12 @@ import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import BlogPage from './pages/BlogPage';
+import ContactPage from './pages/ContactPage';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import * as api from './services/api';
 
-export type Page = 'home' | 'templates' | 'editor' | 'dashboard' | 'login' | 'register' | 'admin';
+export type Page = 'home' | 'templates' | 'editor' | 'dashboard' | 'login' | 'register' | 'admin' | 'blog' | 'contact';
 
 declare global {
   interface Window {
@@ -143,6 +145,10 @@ const AppContent: React.FC = () => {
         return <DashboardPage onEdit={handleEditCv} onDownload={handleDownloadCv} onCreateNew={() => navigateTo('templates')} />;
       case 'admin':
         return <AdminDashboardPage />;
+      case 'blog':
+        return <BlogPage />;
+      case 'contact':
+        return <ContactPage />;
       case 'editor':
         if (selectedTemplate) {
           return (

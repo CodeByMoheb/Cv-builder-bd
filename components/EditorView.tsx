@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ResumeData, Template } from '../types';
 import ResumeEditor from './ResumeEditor';
 import ResumePreview from './ResumePreview';
@@ -15,22 +15,70 @@ interface EditorViewProps {
   onGeneratePdf: () => void;
 }
 
+const AUTOSAVE_INTERVAL = 60000; // 60 seconds
+
 const EditorView: React.FC<EditorViewProps> = ({ template, resumeData, setResumeData, onBack, onSave, currentCvId, onGeneratePdf }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const resumeDataRef = useRef(resumeData);
+
+  // Keep a ref to the latest resume data to avoid stale closures in setInterval
+  useEffect(() => {
+    resumeDataRef.current = resumeData;
+  }, [resumeData]);
+
+  const getAutoSaveKey = () => {
+    return currentCvId ? `autosave_cv_${currentCvId}` : `autosave_new_${template.id}`;
+  };
+
+  // Effect for auto-saving
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const key = getAutoSaveKey();
+      localStorage.setItem(key, JSON.stringify(resumeDataRef.current));
+      console.log("Auto-saved progress.");
+    }, AUTOSAVE_INTERVAL);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [currentCvId, template.id]);
+  
+  // Effect for loading auto-saved data on component mount
+  useEffect(() => {
+    const key = getAutoSaveKey();
+    const autoSavedData = localStorage.getItem(key);
     
+    if (autoSavedData) {
+      if (window.confirm("We found some unsaved changes. Would you like to restore them?")) {
+        try {
+          const parsedData = JSON.parse(autoSavedData);
+          setResumeData(parsedData);
+        } catch (e) {
+          console.error("Failed to parse auto-saved data:", e);
+        }
+      }
+      // Clean up the auto-saved data after asking the user
+      localStorage.removeItem(key);
+    }
+  }, [currentCvId, template.id, setResumeData]);
+
+
   const handleSaveClick = async () => {
     setIsSaving(true);
+    const autoSaveKey = getAutoSaveKey();
     try {
       if (!currentCvId) {
         const name = prompt("Please enter a name for your CV:", resumeData.personalInfo.name || "My Resume");
         if (name) {
           await onSave(name);
           alert("CV Saved Successfully!");
+          localStorage.removeItem(autoSaveKey); // Clean up on save
         }
       } else {
         await onSave(resumeData.personalInfo.name);
         alert("CV Updated Successfully!");
+        localStorage.removeItem(autoSaveKey); // Clean up on save
       }
     } catch (error) {
         alert("Failed to save CV. Please try again.");

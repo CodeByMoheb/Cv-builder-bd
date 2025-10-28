@@ -32,7 +32,7 @@ const initDb = () => {
         id: uuidv4(),
         email: 'admin@cvbd.com',
         name: 'Admin User',
-        password: 'password123', // In a real app, this would be hashed
+        password: 'password123', // In a real app, this would be a hash
         role: 'admin',
       };
       db.users.push(adminUser);
@@ -125,6 +125,10 @@ export const updateUserProfile = (data: { name?: string; photo?: string }): Prom
     return new Promise((resolve, reject) => {
         const currentUser = getCurrentUser();
         if (!currentUser) return reject(new Error("Not authenticated"));
+
+        if (data.name !== undefined && data.name.trim() === '') {
+            return reject(new Error("Name cannot be empty."));
+        }
         
         const userIndex = db.users.findIndex(u => u.id === currentUser.id);
         if (userIndex === -1) return reject(new Error("User not found"));
@@ -136,7 +140,6 @@ export const updateUserProfile = (data: { name?: string; photo?: string }): Prom
     });
 };
 
-// FIX: Corrected the malformed function signature which contained a feature description.
 export const changePassword = (data: { oldPassword: string; newPassword: string }): Promise<void> => {
     return new Promise((resolve, reject) => {
         const currentUser = getCurrentUser();
@@ -149,13 +152,19 @@ export const changePassword = (data: { oldPassword: string; newPassword: string 
             return reject(new Error("Incorrect old password"));
         }
         
+        if (!data.newPassword || data.newPassword.length < 6) {
+            return reject(new Error("New password must be at least 6 characters long."));
+        }
+        if (data.newPassword === data.oldPassword) {
+            return reject(new Error("New password cannot be the same as the old password."));
+        }
+        
         db.users[userIndex].password = data.newPassword;
         saveDb();
         resolve();
     });
 };
 
-// FIX: Implemented missing API functions for resume CRUD operations and user management.
 export const createResume = (data: { name: string; resumeData: ResumeData; templateId: string }): Promise<SavedResume> => {
     return new Promise((resolve, reject) => {
         const currentUser = getCurrentUser();
